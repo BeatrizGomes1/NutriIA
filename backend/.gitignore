@@ -1,0 +1,23 @@
+# Ambientes virtuais
+.venv/
+venv/
+env/
+
+# Cache e arquivos gerados pelo Python
+__pycache__/
+*.py[cod]
+
+# Ferramentas de testes e qualidade
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# Artefatos de distribuição
+build/
+dist/
+*.egg-info/
+
+# Configurações locais e segredos
+.env
+.env.*
+!.env.example

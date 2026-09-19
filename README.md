@@ -1,53 +1,76 @@
-# 🥗 Assistente Nutricional com LLM
+# NutriIA
 
-> Leitura crítica de rótulos alimentares e análise nutricional personalizada usando IA.
+Assistente nutricional para leitura de rótulos, análise de ingredientes e
+orientações personalizadas com apoio de inteligência artificial.
 
----
+## Estrutura do projeto
 
-## 📌 Sobre o Projeto
+Este repositório será organizado como um monorepo:
 
-Muitos alimentos ultraprocessados usam termos técnicos (como *maltodextrina*, *dextrose*, *caseinato* ou *soro de leite*) para mascarar açúcares e lactose.
+```text
+NutriIA/
+├── frontend/
+├── backend/
+├── prompts/
+└── README.md
+```
 
-Este aplicativo mobile analisa rótulos e tabelas nutricionais via **Visão Computacional** e **LLMs**, traduzindo dados complexos em diagnósticos diretos de acordo com o perfil, metas e restrições alimentares do usuário.
+### Frontend
 
----
+Aplicação mobile Android, planejada com Kotlin e Jetpack Compose. Será
+responsável pela interface, captura de imagens, leitura de códigos de barras
+e interação com o usuário.
 
-## ✨ Funcionalidades
+### Backend
 
-* **Detecção de Ingredientes Ocultos:** Identifica sinônimos de açúcares, aditivos e alérgenos.
-* **Veredito Personalizado:** Avaliação instantânea em `[RECOMENDADO]`, `[COM MODERAÇÃO]` ou `[EVITAR]`.
-* **Explicabilidade:** Justificativas curtas (2 a 3 frases) em linguagem acessível.
-* **Leitura Rápida:** Captura via foto (OCR/Vision) ou código de barras (EAN).
+Backend planejado em Python. A comunicação com o frontend será feita por uma
+API HTTP, com FastAPI planejado para a próxima etapa.
 
----
+O backend ainda está somente estruturado, sem implementação funcional:
 
-## 📱 Fluxo da Aplicação
+```text
+backend/
+├── app/
+│   ├── config/
+│   ├── api/
+│   ├── integrations/
+│   ├── models/
+│   ├── services/
+│   ├── utils/
+│   └── main.py
+├── tests/
+├── .env.example
+├── requirements.txt
+└── README.md
+```
 
-[Perfil do Usuário] ➔ [Leitura do Rótulo] ➔ [Análise via LLM] ➔ [Veredito + Alertas]
+### Prompts
 
+A pasta `prompts/` registra prompts e decisões importantes do projeto. Toda
+implementação relevante ou decisão arquitetural deve criar uma nova versão
+nessa pasta antes da alteração.
 
----
+```text
+prompts/
+├── README.md
+├── INDEX.md
+└── vNNNN-nome-da-decisao/
+    ├── prompt.md
+    └── decision.md
+```
 
-## 🛠️ Tecnologias
+Versões existentes não devem ser sobrescritas. O índice deve ser atualizado a
+cada nova versão.
 
-* **Mobile:** Android Nativo (Kotlin + Jetpack Compose)
-* **Leitura de Código:** Google ML Kit
-* **Integração / Backend:** Python / Node.js / Java (Spring Boot)
-* **API Externa:** Open Food Facts
-* **IA / LLM:** Llama 3 (via Groq Cloud API ou Ollama)
+## Objetivo
 
----
+O NutriIA deverá analisar informações de produtos alimentícios e considerar o
+perfil, as metas e as restrições alimentares de cada usuário para produzir
+orientações claras e personalizadas.
 
-## 🧪 Exemplo de Uso
+## Status
 
-* **Perfil:** Foco em emagrecimento | Restrição a Lactose e Açúcar
-* **Produto:** Iogurte de Morango ("Zero Adição de Açúcares")
-* **Ingredientes:** *Leite reconstituído, soro de leite em pó, preparado de morango (suco concentrado de maçã, maltodextrina), sucralose.*
-
-### 🤖 Retorno da IA
-
-* **Veredito:** `[EVITAR]`
-* **Alertas:** Contém **Soro de Leite em Pó** e **Maltodextrina / Suco Concentrado**.
-* **Justificativa:** *"Apesar de indicar 'Zero Açúcar', contém maltodextrina e suco concentrado de fruta, que elevam a glicemia. A presença de soro de leite também viola sua restrição à lactose."*
-
----
+Projeto em fase inicial de organização do monorepo. A estrutura atual não
+possui implementação funcional; decisões de provedor, persistência, OCR,
+autenticação e versões mínimas do Android ainda serão registradas conforme o
+desenvolvimento começar.
