@@ -1,7 +1,10 @@
 import os
 
+from dotenv import load_dotenv
 from google import genai
 
+
+load_dotenv()
 
 MODEL_NAME = os.getenv("GEMINI_MODEL", "gemini-2.0-flash")
 
@@ -20,15 +23,23 @@ def _build_client():
 client = _build_client()
 
 
-def generate_response(prompt):
+def generate_response(prompt: str) -> str:
+    if not prompt or not prompt.strip():
+        raise ValueError("Prompt must not be empty")
+
     if client is None:
-        return "Gemini client unavailable"
+        raise RuntimeError("GEMINI_API_KEY is not configured")
 
     try:
         response = client.models.generate_content(
             model=MODEL_NAME,
             contents=prompt,
         )
-        return getattr(response, "text", str(response))
-    except Exception:
-        return "Gemini client unavailable"
+    except Exception as error:
+        raise RuntimeError("Failed to communicate with Gemini") from error
+
+    response_text = getattr(response, "text", None)
+    if not response_text:
+        raise RuntimeError("Gemini returned an empty response")
+
+    return response_text
