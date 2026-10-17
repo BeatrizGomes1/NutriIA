@@ -23,17 +23,19 @@ e interação com o usuário.
 
 ### Backend
 
-Backend planejado em Python. A comunicação com o frontend será feita por uma
-API HTTP, com FastAPI planejado para a próxima etapa.
+Backend em Python. O core de análise já possui modelos, configuração,
+serviços e integração preparada para o Gemini. A comunicação com o frontend
+será feita por uma API HTTP em FastAPI, que permanece em desenvolvimento
+separado.
 
-O backend ainda está somente estruturado, sem implementação funcional:
+O fluxo principal pode ser executado localmente sem iniciar o FastAPI:
 
 ```text
 backend/
 ├── app/
 │   ├── config/
 │   ├── api/
-│   ├── integrations/
+│   ├── gemini/
 │   ├── models/
 │   ├── services/
 │   ├── utils/
@@ -68,9 +70,16 @@ O NutriIA deverá analisar informações de produtos alimentícios e considerar 
 perfil, as metas e as restrições alimentares de cada usuário para produzir
 orientações claras e personalizadas.
 
+## Execução local
+
+Consulte [backend/README.md](backend/README.md) para instalar as dependências,
+executar o fluxo mockado e alternar para o Gemini real.
+
+O resultado da execução é salvo em
+`prompts/v0007-core-analysis-flow/result.json`.
+
 ## Status
 
-Projeto em fase inicial de organização do monorepo. A estrutura atual não
-possui implementação funcional; decisões de provedor, persistência, OCR,
-autenticação e versões mínimas do Android ainda serão registradas conforme o
-desenvolvimento começar.
+O core mockado da análise nutricional está funcional. A API FastAPI,
+persistência, autenticação, OCR, consulta por EAN e histórico ainda serão
+implementados em etapas posteriores.

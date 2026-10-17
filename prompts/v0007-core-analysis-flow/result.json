@@ -1,0 +1,33 @@
+{
+  "status": "not_recommended",
+  "product_name": null,
+  "summary": "O produto Iogurte de morango não é recomendado, pois contém ingredientes que violam diretamente suas restrições de 'sem lactose' e 'sem açúcar', além de apresentar elevado teor de carboidratos e açúcares para um objetivo de emagrecimento.",
+  "reasons": [
+    "Presença de 'leite reconstituído' nos ingredientes, gerando conflito com a restrição 'sem lactose'.",
+    "Presença de 'açúcar' e 'maltodextrina' nos ingredientes, gerando conflito com a restrição 'sem açúcar'.",
+    "O produto contém 18.0g de açúcares e 22.0g de carboidratos (130.0 kcal por porção), o que deve ser observado em relação ao objetivo de emagrecimento."
+  ],
+  "conflicts": [
+    {
+      "term": "leite",
+      "category": "restriction",
+      "profile_item": "sem lactose",
+      "evidence": "O termo 'leite' aparece nos ingredientes informados."
+    },
+    {
+      "term": "acucar",
+      "category": "restriction",
+      "profile_item": "sem açúcar",
+      "evidence": "O termo 'acucar' aparece nos ingredientes informados."
+    }
+  ],
+  "evidence": [
+    "Produto identificado por nome ou EAN.",
+    "Lista de ingredientes disponível para comparação.",
+    "Há dados nutricionais informados para o produto.",
+    "O termo 'leite' aparece nos ingredientes informados.",
+    "O termo 'acucar' aparece nos ingredientes informados."
+  ],
+  "disclaimer": "Esta análise é informativa e não substitui orientação profissional.",
+  "provider": "gemini"
+}

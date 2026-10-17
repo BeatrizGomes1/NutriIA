@@ -25,6 +25,8 @@ backend/
 2. Preencha `GEMINI_API_KEY` com uma chave criada no Google AI Studio.
 3. Mantenha o arquivo `.env` fora do Git. Ele já está no `.gitignore`.
 4. Confira `GEMINI_MODEL` e altere-o se necessário.
+5. Use `NUTRITION_PROVIDER=mock` para execução local sem chamada externa ou
+   `NUTRITION_PROVIDER=gemini` para enviar o contexto ao Gemini.
 
 A chave não é necessária para executar os testes unitários. Sem ela, uma
 chamada real falha explicitamente com `GEMINI_API_KEY is not configured`.
@@ -34,7 +36,17 @@ chamada real falha explicitamente com `GEMINI_API_KEY is not configured`.
 Na pasta `backend`, execute:
 
 ```powershell
+py -m venv .venv
+.venv\Scripts\Activate.ps1
 py -m pip install -r requirements.txt
+```
+
+No Bash, a ativação equivalente é:
+
+```bash
+python -m venv .venv
+source .venv/bin/activate
+python -m pip install -r requirements.txt
 ```
 
 ## Testes automatizados
@@ -47,7 +59,7 @@ py -m pytest -q
 
 Os testes não chamam a API real e não consomem cota do Gemini.
 
-## Teste manual da API
+## Teste direto do cliente Gemini
 
 Depois de configurar o `.env`, execute na pasta `backend`:
 
@@ -63,3 +75,33 @@ Também é possível testar o fluxo nutricional:
 ```powershell
 py -c "from app.gemini.nutrition_ai import generate_nutrition_plan; print(generate_nutrition_plan({'goal': 'emagrecimento', 'daily_kcal': 1800, 'restrictions': ['sem glúten']}))"
 ```
+
+## Fluxo automatizado do core
+
+Para executar o fluxo completo com dados mockados, sem iniciar o FastAPI:
+
+```powershell
+py -m app.run_core_flow
+```
+
+Por padrão, o fluxo usa o provedor mockado e salva o resultado em
+`../prompts/v0007-core-analysis-flow/result.json`.
+
+O comando deve ser executado a partir da pasta `backend`:
+
+```bash
+python -m app.run_core_flow
+```
+
+Para enviar o mesmo contexto ao Gemini real, configure no `.env`:
+
+```env
+NUTRITION_PROVIDER=gemini
+```
+
+Nesse modo, `GEMINI_API_KEY` também deve estar configurada. Não há fallback
+automático para o mock quando o Gemini real falha.
+
+O Gemini deve retornar JSON válido com `status`, `summary`, `reasons`,
+`conflicts` e `evidence`. Respostas em texto livre ou JSON inválido causam
+falha explícita do fluxo.
