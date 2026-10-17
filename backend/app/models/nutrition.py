@@ -58,7 +58,8 @@ class Conflict(BaseModel):
     term: str
     category: str
     profile_item: str
-    evidence: str
+    evidence: str = Field(description="Explicação legível de como o ingrediente se relaciona ao perfil.")
+    source_excerpt: str = Field(description="Trecho literal dos ingredientes que sustenta o conflito.")
 
 
 class AnalysisContext(BaseModel):
@@ -66,9 +67,6 @@ class AnalysisContext(BaseModel):
 
     product: Product
     profile: dict[str, Any]
-    normalized_ingredients: str
-    conflicts: list[Conflict] = Field(default_factory=list)
-    evidence: list[str] = Field(default_factory=list)
     blocking_reasons: list[str] = Field(default_factory=list)
 
     def to_provider_payload(self) -> dict[str, Any]:

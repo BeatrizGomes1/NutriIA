@@ -30,7 +30,7 @@ def build_mock_input() -> tuple[Product, UserProfile]:
     profile = UserProfile(
         name="Usuário demonstrativo",
         goal="emagrecimento",
-        restrictions=["sem lactose", "sem açúcar"],
+        restrictions=["leite", "açúcar"],
     )
     return product, profile
 
