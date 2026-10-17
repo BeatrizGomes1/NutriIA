@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="black">#FF000000</color>
+    <color name="white">#FFFFFFFF</color>
+
+    <color name="green_primary">#1B7A4C</color>
+    <color name="green_dark">#145C3A</color>
+    <color name="green_hero">#1B6044</color>
+    <color name="green_scan_nav">#16382F</color>
+    <color name="green_soft">#E4F3EA</color>
+    <color name="green_chip">#D4EDDA</color>
+    <color name="background">#F4F7F5</color>
+    <color name="text_primary">#1C1C1C</color>
+    <color name="text_secondary">#6B7280</color>
+    <color name="text_muted">#8B958F</color>
+    <color name="danger">#C23B3B</color>
+    <color name="thumb_mint">#E7F4EC</color>
+    <color name="thumb_peach">#F6E6D4</color>
+    <color name="stroke">#E4EAE6</color>
+    <color name="scanner">#16352E</color>
+    <color name="nav_unselected">#8A938E</color>
+</resources>

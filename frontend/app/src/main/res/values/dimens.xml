@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <dimen name="screen_padding">20dp</dimen>
+    <dimen name="card_radius">16dp</dimen>
+    <dimen name="hero_radius">28dp</dimen>
+    <dimen name="button_radius">14dp</dimen>
+    <dimen name="search_radius">24dp</dimen>
+    <dimen name="chip_radius">20dp</dimen>
+    <dimen name="scanner_radius">28dp</dimen>
+    <dimen name="thumb_radius">12dp</dimen>
+    <dimen name="bottom_nav_height">72dp</dimen>
+</resources>

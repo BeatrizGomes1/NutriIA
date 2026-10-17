@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">NutriIA</string>
+    <string name="greeting">Olá, %1$s</string>
+    <string name="see_history">Ver histórico</string>
+    <string name="hero_title">Entenda o rótulo\nantes de decidir</string>
+    <string name="hero_subtitle">Analise ingredientes, nutrientes e preferências cadastradas em poucos segundos.</string>
+    <string name="scan_product">Escanear produto</string>
+    <string name="hero_hint">Para produtos industrializados com código de barras</string>
+    <string name="latest_analyses">Últimas análises</string>
+    <string name="last_analysis">ÚLTIMA ANÁLISE</string>
+    <string name="profile_up_to_date">Seu perfil está em dia?</string>
+    <string name="review">Revisar</string>
+    <string name="disclaimer">O NutriIA é uma ferramenta de apoio à decisão. Não substitui orientação profissional.</string>
+    <string name="nav_home">Início</string>
+    <string name="nav_history">Histórico</string>
+    <string name="nav_scan">Escanear</string>
+    <string name="nav_restrictions">Restrições</string>
+    <string name="nav_profile">Perfil</string>
+    <string name="your_analyses">SUAS ANÁLISES</string>
+    <string name="history_title">Histórico</string>
+    <string name="history_subtitle">Revisite produtos que você já avaliou.</string>
+    <string name="search_product">Buscar produto</string>
+    <string name="filter_all">Todos</string>
+    <string name="filter_recommended">Recomendados</string>
+    <string name="filter_not_recommended">Não recomendados</string>
+    <string name="recommended">Recomendado</string>
+    <string name="not_recommended">Não recomendado</string>
+    <string name="new_analysis">NOVA ANÁLISE</string>
+    <string name="scan_title">Escanear produto</string>
+    <string name="scan_subtitle">Aponte para o código de barras ou para o rótulo.</string>
+    <string name="scan_hint">Centralize o produto na área indicada</string>
+    <string name="flash">Flash</string>
+    <string name="use_camera">Usar câmera</string>
+    <string name="scan_info">O app analisa produtos industrializados por EAN ou pela foto da tabela nutricional e dos ingredientes.</string>
+    <string name="simulate_ean">Simular leitura do EAN</string>
+    <string name="no_camera_access">Sem acesso à câmera?</string>
+    <string name="coming_soon">Essa tela entra em um próximo momento.</string>
+    <string name="marca_data_format">%1$s · %2$s</string>
+    <string name="ean_simulado">Leitura simulada: 7891000100103</string>
+    <string name="flash_on">Flash ligado</string>
+    <string name="flash_off">Flash desligado</string>
+    <string name="camera_placeholder">Câmera entra depois. Por enquanto a tela é só visual.</string>
+    <string name="logo_content_description">NutriIA</string>
+</resources>
