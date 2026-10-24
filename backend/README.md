@@ -78,14 +78,15 @@ py -c "from app.gemini.nutrition_ai import generate_nutrition_plan; print(genera
 
 ## Fluxo automatizado do core
 
-Para executar o fluxo completo com dados mockados, sem iniciar o FastAPI:
+Para executar o fluxo sem iniciar o FastAPI:
 
 ```powershell
 py -m app.run_core_flow
 ```
 
-Por padrão, o fluxo usa o provedor mockado e salva o resultado em
-`../prompts/v0007-core-analysis-flow/result.json`.
+O fluxo consulta o produto de EAN demonstrativo `3017624010701` no Open Food
+Facts e usa perfil e provedor de análise mockados. É necessária conexão com a
+internet. O resultado é salvo em `../prompts/v0007-core-analysis-flow/result.json`.
 
 O comando deve ser executado a partir da pasta `backend`:
 
