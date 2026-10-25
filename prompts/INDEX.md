@@ -9,3 +9,4 @@
 | [v0005](v0005-business-analysis-service/) | Serviço de análise contextualizada | Revisada por v0006 |
 | [v0006](v0006-ai-decision-orchestration/) | Orquestração da decisão pela IA | Implementado |
 | [v0007](v0007-core-analysis-flow/) | Fluxo automatizado da análise com IA | Implementado |
+| [v0008](v0008-python-database-integration/) | Integração Python com PostgreSQL | Implementado |

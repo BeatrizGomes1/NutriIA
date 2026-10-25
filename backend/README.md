@@ -106,3 +106,22 @@ automático para o mock quando o Gemini real falha.
 O Gemini deve retornar JSON válido com `status`, `summary`, `reasons`,
 `conflicts` e `evidence`. Respostas em texto livre ou JSON inválido causam
 falha explícita do fluxo.
+
+## Serviços com persistência
+
+O backend usa SQLAlchemy 2 e psycopg 3 para acessar o schema PostgreSQL já
+criado pelas migrações Prisma. Configure `DATABASE_URL` no `.env`; URLs Prisma
+com `?schema=public` são aceitas. O Python não cria nem altera tabelas: aplique
+as migrações pelo fluxo Prisma descrito em `POSTGRESQL_PRISMA.md`.
+
+`ProfileService` cria, consulta e atualiza perfis. `NutritionWorkflowService`
+oferece `capture_ean(user_id, ean)`, que consulta Open Food Facts, registra a
+captura e executa ou reutiliza a análise persistida. `analyze_product` analisa
+um produto já cadastrado. `HistoryService.list(user_id, limit=20, offset=0)`
+consulta análises recentes e `list_captures(...)` inclui capturas sem produto
+encontrado. Esses serviços recebem UUIDs e podem ser
+chamados pela futura camada FastAPI; não implementam rotas nem autenticação.
+
+O cache considera usuário, conteúdo do produto, perfil, provedor, modelo e
+`ANALYSIS_PROMPT_VERSION`. A captura é registrada mesmo quando Open Food Facts
+confirma que o EAN não existe; erros transitórios da fonte são propagados.

@@ -8,7 +8,7 @@
 - `analysis_results`: resultados personalizados por usuário e produto.
 - `ingredient_matches`: ingredientes e evidências associados a cada análise.
 
-`products.ean` é único quando informado. Assim, capturas diferentes podem apontar para o mesmo produto e reutilizar os dados do catálogo. A análise pertence a um usuário, não ao catálogo global. `analysis_results.cache_key` é uma chave opcional única: futuramente a camada Python pode gerar um SHA-256 com o ID do usuário, produto normalizado, perfil relevante e versões do prompt/modelo e buscar a análise antes de chamar a IA. Incluir o usuário evita reutilizar análises personalizadas entre contas. A migração prepara o campo e a restrição, mas ainda não implementa essa lógica de aplicação.
+`products.ean` é único quando informado. Assim, capturas diferentes podem apontar para o mesmo produto e reutilizar os dados do catálogo. A análise pertence a um usuário, não ao catálogo global. Os serviços Python usam `analysis_results.cache_key` para buscar análises por usuário, produto, perfil e versões do provedor/modelo/prompt antes de chamar a IA. Incluir o usuário evita reutilizar análises personalizadas entre contas.
 
 ## Pré-requisitos
 
@@ -64,8 +64,8 @@ npm run db:deploy
 
 ## Observações importantes
 
-- Este passo prepara o schema e as migrações; ainda não conecta os serviços Python ao banco.
-- `cache_key` só evita chamadas repetidas quando o futuro serviço Python calcular e consultar essa chave antes da chamada ao Gemini.
+- Os serviços Python acessam esse schema por SQLAlchemy 2 e psycopg 3. Eles não executam DDL; use Prisma Migrate para aplicar alterações de schema.
+- `cache_key` armazena a chave SHA-256 gerada pelos serviços antes da chamada ao provedor. Ela inclui usuário, produto, perfil e versões do provedor/modelo/prompt.
 - A unicidade do EAN evita duplicar o produto no catálogo; não substitui validação/normalização do código recebido.
 - `image_reference` deve armazenar uma referência/URL controlada, não o conteúdo binário da imagem.
 - `nutrition_table` e `serving_information` são JSONB para acomodar rótulos com estruturas variáveis.

@@ -1,4 +1,4 @@
-"""Read-only client for product lookups in Open Food Facts."""
+"""Cliente somente leitura para consultar produtos no Open Food Facts."""
 
 from typing import Any
 
@@ -8,17 +8,17 @@ from app.models.nutrition import NutritionFacts, Product, ProductSource
 
 
 class OpenFoodFactsError(RuntimeError):
-    """Base error for failed Open Food Facts lookups."""
+    """Erro base para falhas nas consultas ao Open Food Facts."""
 
 
 class ProductNotFoundError(OpenFoodFactsError):
-    """Raised when Open Food Facts has no product for the requested EAN."""
+    """Erro lançado quando o Open Food Facts não encontra o EAN consultado."""
 
 
 class OpenFoodFactsClient:
     BASE_URL = "https://world.openfoodfacts.org/api/v2/product"
     USER_AGENT = "NutriIA/0.1 (local development)"
-    PRODUCT_FIELDS = "code,product_name,brands,ingredients_text,nutriments"
+    PRODUCT_FIELDS = "code,product_name,brands,ingredients_text,nutriments,quantity,serving_size,serving_quantity"
 
     def __init__(
         self,
@@ -71,6 +71,11 @@ class OpenFoodFactsClient:
             ean=str(ean),
             source=ProductSource.EAN,
             ingredients_text=_non_empty_string(data.get("ingredients_text")),
+            serving_information={
+                key: data[key]
+                for key in ("quantity", "serving_size", "serving_quantity")
+                if data.get(key) is not None
+            } or None,
             nutrition=NutritionFacts(
                 calories_kcal=_number(nutriments.get("energy-kcal_100g")),
                 sugars_g=_number(nutriments.get("sugars_100g")),

@@ -26,7 +26,7 @@ def build_analysis_provider(provider_name: str | None = None) -> AnalysisProvide
 
 
 class NutritionService:
-    """Prepare input and delegate the final analysis to an AI provider."""
+    """Prepara os dados e delega a análise final a um provedor de IA."""
 
     def __init__(self, provider: AnalysisProvider | None = None):
         self.provider = provider or build_analysis_provider()
@@ -43,7 +43,12 @@ class NutritionService:
 
         return AnalysisContext(
             product=product,
-            profile=profile.model_dump(mode="json"),
+            profile={
+                "goal": profile.goal,
+                "allergies": profile.allergies,
+                "restrictions": profile.restrictions,
+                "preferences": profile.preferences,
+            },
             blocking_reasons=blocking_reasons,
         )
 
@@ -69,6 +74,6 @@ def analyze_product(
     profile: UserProfile,
     provider: AnalysisProvider | None = None,
 ) -> AnalysisResult:
-    """Convenience entry point for an API adapter or application service."""
+    """Ponto de entrada prático para um adaptador de API ou serviço da aplicação."""
 
     return NutritionService(provider=provider).analyze(product, profile)
