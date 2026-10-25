@@ -1,38 +1,21 @@
-"""Run the mocked core analysis flow without starting FastAPI."""
+"""Run the core analysis flow with a real OFF lookup and mocked analysis."""
 
 import json
 from pathlib import Path
 
-from app.models.nutrition import NutritionFacts, Product, ProductSource
 from app.models.user import UserProfile
+from app.services.open_food_facts import OpenFoodFactsClient
 from app.services.nutrition_service import analyze_product
 
+DEMO_EAN = "3017624010701"
 
-def build_mock_input() -> tuple[Product, UserProfile]:
-    product = Product(
-        name="Iogurte de morango",
-        brand="NutriIA Demo",
-        source=ProductSource.LABEL,
-        ingredients=[
-            "leite reconstituído",
-            "açúcar",
-            "maltodextrina",
-            "suco concentrado de morango",
-        ],
-        nutrition=NutritionFacts(
-            calories_kcal=130,
-            sugars_g=18,
-            carbohydrates_g=22,
-            protein_g=4,
-            sodium_mg=80,
-        ),
-    )
+def build_mock_profile() -> UserProfile:
     profile = UserProfile(
         name="Usuário demonstrativo",
         goal="emagrecimento",
-        restrictions=["leite", "açúcar"],
+        restrictions=["sugar"],
     )
-    return product, profile
+    return profile
 
 
 def output_path() -> Path:
@@ -40,7 +23,8 @@ def output_path() -> Path:
 
 
 def main() -> None:
-    product, profile = build_mock_input()
+    product = OpenFoodFactsClient().get_product(DEMO_EAN)
+    profile = build_mock_profile()
     result = analyze_product(product, profile)
     destination = output_path()
     destination.parent.mkdir(parents=True, exist_ok=True)
@@ -49,6 +33,7 @@ def main() -> None:
         encoding="utf-8",
     )
     print(f"Provider: {result.provider}")
+    print(f"Produto: {product.name or product.ean}")
     print(f"Status: {result.status.value}")
     print(f"Resultado salvo em: {destination}")
 
