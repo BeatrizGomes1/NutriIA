@@ -124,3 +124,4 @@ chamados pela futura camada FastAPI; não implementam rotas nem autenticação.
 
 O cache considera usuário, conteúdo do produto, perfil, provedor, modelo e
 `ANALYSIS_PROMPT_VERSION`. A captura é registrada mesmo quando Open Food Facts
+confirma que o EAN não existe; erros transitórios da fonte são propagados.

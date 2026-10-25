@@ -3,7 +3,7 @@ import unicodedata
 
 
 def normalize_text(value: str | None) -> str:
-    """Normalize user/product text for conservative term matching."""
+    """Normaliza textos de usuário e produto para comparar termos com cautela."""
 
     if not value:
         return ""
