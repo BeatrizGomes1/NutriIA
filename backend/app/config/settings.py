@@ -4,11 +4,11 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
 class Settings(BaseSettings):
-    """Runtime settings shared by the backend layers.
+    """Configurações de execução compartilhadas pelas camadas do backend.
 
-    The API and external integrations may consume these settings later. The
-    business service defaults to the mock provider so local development does
-    not require an external credential.
+    A API e as integrações externas podem usar estas configurações. O serviço
+    de negócio usa o provedor simulado por padrão, para que o desenvolvimento
+    local não exija credenciais externas.
     """
 
     app_env: str = "development"
@@ -16,8 +16,10 @@ class Settings(BaseSettings):
     cors_origins: str = "http://localhost:3000,http://localhost:8080"
 
     gemini_api_key: str | None = None
-    gemini_model: str = "gemini-2.0-flash"
+    gemini_model: str = "gemini-3.6-flash"
     nutrition_provider: str = "mock"
+    database_url: str | None = None
+    analysis_prompt_version: str = "v0008"
 
     model_config = SettingsConfigDict(
         env_file=".env",
