@@ -10,9 +10,13 @@ class DietaryGoal(StrEnum):
 
 
 class UserProfile(BaseModel):
-    """User-provided context, not a clinical diagnosis."""
+    """Contexto informado pelo usuário, não um diagnóstico clínico."""
 
+    id: str | None = None
     name: str | None = None
+    email: str | None = None
+    age_range: str | None = None
+    onboarding_completed: bool = False
     goal: DietaryGoal | str | None = None
     allergies: list[str] = Field(default_factory=list)
     restrictions: list[str] = Field(default_factory=list)

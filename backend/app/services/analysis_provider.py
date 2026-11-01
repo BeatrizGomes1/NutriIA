@@ -14,7 +14,7 @@ from app.utils.helpers import normalize_text
 
 
 class AnalysisProvider(Protocol):
-    """Contract shared by the real Gemini provider and the mock provider."""
+    """Contrato compartilhado pelos provedores Gemini e simulado."""
 
     name: str
 
@@ -25,7 +25,7 @@ class AnalysisProvider(Protocol):
 
 
 class ProviderConflict(BaseModel):
-    """Provider conflict with a source quote used for backend grounding."""
+    """Conflito do provedor com um trecho da fonte usado para validar a análise."""
 
     term: str
     category: str
@@ -40,7 +40,7 @@ class ProviderConflict(BaseModel):
 
 
 class ProviderAnalysisResult(BaseModel):
-    """Internal provider response; source excerpts are removed before returning."""
+    """Resposta interna do provedor; trechos da fonte são removidos antes do retorno."""
 
     status: AnalysisStatus
     product_name: str | None = None
@@ -51,7 +51,7 @@ class ProviderAnalysisResult(BaseModel):
 
 
 class GeminiAnalysisProvider:
-    """Adapter that delegates the final decision to the Gemini integration."""
+    """Adaptador que delega a decisão final à integração com o Gemini."""
 
     name = "gemini"
 
@@ -70,7 +70,7 @@ SUMMARY_BY_STATUS = {
 
 
 class MockAnalysisProvider:
-    """Small deterministic stand-in for Gemini during local development."""
+    """Substituto determinístico e simples do Gemini para desenvolvimento local."""
 
     name = "mock"
 
@@ -164,7 +164,7 @@ def parse_provider_result(
     provider_name: str,
     context: AnalysisContext,
 ) -> AnalysisResult:
-    """Validate, ground, and convert the provider response to the public result."""
+    """Valida, fundamenta e converte a resposta do provedor para o resultado público."""
 
     if isinstance(response, ProviderAnalysisResult):
         result = response

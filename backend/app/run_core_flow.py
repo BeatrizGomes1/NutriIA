@@ -1,4 +1,4 @@
-"""Run the core analysis flow with a real OFF lookup and mocked analysis."""
+"""Executa o fluxo principal com consulta real ao OFF e análise simulada."""
 
 import json
 from pathlib import Path

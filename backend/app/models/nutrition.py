@@ -1,4 +1,5 @@
 from enum import StrEnum
+from datetime import datetime
 from typing import Any
 
 from pydantic import BaseModel, Field
@@ -19,10 +20,10 @@ class ProductSource(StrEnum):
 
 
 class NutritionFacts(BaseModel):
-    """Nutrition values available for the product.
+    """Valores nutricionais disponíveis para o produto.
 
-    Values are optional because the requirements explicitly allow incomplete
-    labels. Negative values, however, are never meaningful here.
+    Os valores são opcionais porque os requisitos permitem rótulos
+    incompletos. Valores negativos, porém, não são válidos neste contexto.
     """
 
     calories_kcal: float | None = Field(default=None, ge=0)
@@ -36,12 +37,14 @@ class NutritionFacts(BaseModel):
 
 
 class Product(BaseModel):
+    id: str | None = None
     name: str | None = None
     brand: str | None = None
     ean: str | None = None
     source: ProductSource = ProductSource.UNKNOWN
     ingredients: list[str] = Field(default_factory=list)
     ingredients_text: str | None = None
+    serving_information: dict[str, Any] | None = None
     nutrition: NutritionFacts = Field(default_factory=NutritionFacts)
 
     def has_identity(self) -> bool:
@@ -63,17 +66,29 @@ class Conflict(BaseModel):
 
 
 class AnalysisContext(BaseModel):
-    """Structured input sent to the AI analysis provider."""
+    """Entrada estruturada enviada ao provedor de análise por IA."""
 
     product: Product
     profile: dict[str, Any]
     blocking_reasons: list[str] = Field(default_factory=list)
 
     def to_provider_payload(self) -> dict[str, Any]:
-        return self.model_dump(mode="json")
+        product = self.product.model_dump(mode="json")
+        product.pop("id", None)
+        profile = {
+            key: self.profile.get(key)
+            for key in ("goal", "allergies", "restrictions", "preferences")
+        }
+        return {
+            "product": product,
+            "profile": profile,
+            "blocking_reasons": self.blocking_reasons,
+        }
 
 
 class AnalysisResult(BaseModel):
+    id: str | None = None
+    created_at: datetime | None = None
     status: AnalysisStatus
     product_name: str | None = None
     summary: str
