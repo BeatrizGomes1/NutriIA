@@ -3,7 +3,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from sqlalchemy.exc import IntegrityError, SQLAlchemyError
 
-from app.api.routes import DatabaseUnavailable, router
+from app.api.routes import AuthConfigurationError, DatabaseUnavailable, router
 from app.config.settings import Settings, get_settings
 from app.services.database_service import ProfileValidationError
 from app.services.open_food_facts import OpenFoodFactsError
@@ -16,6 +16,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
 		version="0.1.0",
 		description="API para perfis, produtos e análises nutricionais.",
 	)
+	application.state.settings = settings
 
 	if settings.cors_origins_list:
 		application.add_middleware(
@@ -31,6 +32,12 @@ def create_app(settings: Settings | None = None) -> FastAPI:
 		_request: Request, _error: DatabaseUnavailable
 	) -> JSONResponse:
 		return JSONResponse(status_code=503, content={"detail": "Database unavailable"})
+
+	@application.exception_handler(AuthConfigurationError)
+	async def auth_configuration_handler(
+		_request: Request, _error: AuthConfigurationError
+	) -> JSONResponse:
+		return JSONResponse(status_code=503, content={"detail": "Authentication is not configured"})
 
 	@application.exception_handler(IntegrityError)
 	async def integrity_error_handler(

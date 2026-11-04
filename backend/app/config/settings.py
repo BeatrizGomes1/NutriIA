@@ -20,6 +20,8 @@ class Settings(BaseSettings):
     nutrition_provider: str = "mock"
     database_url: str | None = None
     analysis_prompt_version: str = "v0008"
+    jwt_secret_key: str | None = None
+    access_token_expire_minutes: int = 30
 
     model_config = SettingsConfigDict(
         env_file=".env",

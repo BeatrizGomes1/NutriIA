@@ -59,6 +59,7 @@ model UserProfile {
   id                    String           @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   name_or_nickname      String           @db.VarChar(120)
   email                 String           @unique @db.VarChar(320)
+  password_hash         String?          @db.Text
   age_range             String?          @db.VarChar(40)
   objective             UserObjective
   declared_allergies    String[]         @default([])

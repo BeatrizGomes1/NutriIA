@@ -3,17 +3,29 @@ from uuid import uuid4
 import pytest
 from fastapi.testclient import TestClient
 
-from app.api.routes import get_history_service, get_profile_service, get_workflow_service
+from app.api.routes import (
+    get_auth_service,
+    get_current_profile,
+    get_history_service,
+    get_profile_service,
+    get_workflow_service,
+)
 from app.api.schemas import ProfilePayload
 from app.config.settings import Settings
 from app.main import create_app
+from app.models.user import UserProfile
 from app.services.nutrition_workflow_service import CaptureAnalysisOutcome
 
 
 @pytest.fixture
 def api_client():
     application = create_app(
-        Settings(_env_file=None, api_v1_prefix="/api/v1", cors_origins="")
+        Settings(
+            _env_file=None,
+            api_v1_prefix="/api/v1",
+            cors_origins="",
+            jwt_secret_key="test-only-secret-key-with-at-least-32-chars",
+        )
     )
     with TestClient(application) as client:
         yield client
@@ -27,38 +39,42 @@ def test_health_route(api_client):
     assert response.json() == {"status": "ok"}
 
 
-def test_create_profile_route(api_client):
+def test_register_route_returns_bearer_token_and_profile(api_client):
     profile_id = uuid4()
 
-    class FakeProfileService:
-        def create(self, profile):
+    class FakeAuthService:
+        def register(self, profile, password):
+            assert password == "a-strong-password"
             return profile.model_copy(update={"id": str(profile_id)})
 
-    api_client.app.dependency_overrides[get_profile_service] = lambda: FakeProfileService()
+    api_client.app.dependency_overrides[get_auth_service] = lambda: FakeAuthService()
 
     response = api_client.post(
-        "/api/v1/profiles",
+        "/api/v1/auth/register",
         json={
             "name_or_nickname": "Ana",
             "email": "ANA@example.com",
             "objective": "weight_loss",
             "declared_allergies": ["amendoim"],
+            "password": "a-strong-password",
         },
     )
 
     assert response.status_code == 201
-    assert response.json()["id"] == str(profile_id)
-    assert response.json()["email"] == "ana@example.com"
-    assert response.json()["declared_allergies"] == ["amendoim"]
+    assert response.json()["access_token"]
+    assert response.json()["token_type"] == "bearer"
+    assert response.json()["user"]["id"] == str(profile_id)
+    assert "password" not in response.json()["user"]
 
 
 def test_invalid_profile_payload_is_rejected(api_client):
     response = api_client.post(
-        "/api/v1/profiles",
+        "/api/v1/auth/register",
         json={
             "name_or_nickname": "Ana",
             "email": "not-an-email",
             "objective": "weight_loss",
+            "password": "a-strong-password",
         },
     )
 
@@ -66,15 +82,37 @@ def test_invalid_profile_payload_is_rejected(api_client):
 
 
 def test_missing_profile_returns_not_found(api_client):
+    user_id = uuid4()
+
     class FakeProfileService:
         def get(self, _user_id):
             return None
 
     api_client.app.dependency_overrides[get_profile_service] = lambda: FakeProfileService()
+    api_client.app.dependency_overrides[get_current_profile] = lambda: UserProfile(
+        id=str(user_id), name="Ana", email="ana@example.com", goal="weight_loss"
+    )
 
-    response = api_client.get(f"/api/v1/profiles/{uuid4()}")
+    response = api_client.get(f"/api/v1/profiles/{user_id}")
 
     assert response.status_code == 404
+
+
+def test_profile_route_hides_another_users_profile(api_client):
+    authenticated_user_id = uuid4()
+    requested_user_id = uuid4()
+
+    api_client.app.dependency_overrides[get_current_profile] = lambda: UserProfile(
+        id=str(authenticated_user_id),
+        name="Ana",
+        email="ana@example.com",
+        goal="weight_loss",
+    )
+
+    response = api_client.get(f"/api/v1/profiles/{requested_user_id}")
+
+    assert response.status_code == 404
+    assert response.json() == {"detail": "Resource not found"}
 
 
 def test_ean_capture_route_returns_capture_and_analysis_fields(api_client):
@@ -93,6 +131,9 @@ def test_ean_capture_route_returns_capture_and_analysis_fields(api_client):
             )
 
     api_client.app.dependency_overrides[get_workflow_service] = lambda: FakeWorkflowService()
+    api_client.app.dependency_overrides[get_current_profile] = lambda: UserProfile(
+        id=str(user_id), name="Ana", email="ana@example.com", goal="weight_loss"
+    )
 
     response = api_client.post(
         f"/api/v1/profiles/{user_id}/captures/ean",
@@ -116,6 +157,9 @@ def test_gemini_failure_returns_gateway_error_without_internal_details(api_clien
             raise RuntimeError("provider failure containing internal details")
 
     api_client.app.dependency_overrides[get_workflow_service] = lambda: FakeWorkflowService()
+    api_client.app.dependency_overrides[get_current_profile] = lambda: UserProfile(
+        id=str(user_id), name="Ana", email="ana@example.com", goal="weight_loss"
+    )
 
     response = api_client.post(
         f"/api/v1/profiles/{user_id}/captures/ean",
@@ -137,6 +181,9 @@ def test_history_route_uses_pagination(api_client):
             return []
 
     api_client.app.dependency_overrides[get_history_service] = lambda: FakeHistoryService()
+    api_client.app.dependency_overrides[get_current_profile] = lambda: UserProfile(
+        id=str(user_id), name="Ana", email="ana@example.com", goal="weight_loss"
+    )
 
     response = api_client.get(
         f"/api/v1/profiles/{user_id}/history/analyses?limit=5&offset=10"

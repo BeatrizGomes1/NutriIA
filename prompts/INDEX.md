@@ -12,3 +12,4 @@
 | [v0008](v0008-python-database-integration/) | Integração Python com PostgreSQL | Implementado |
 | [v0009](v0009-gemini-interactions-api/) | Integração Gemini pela Interactions API | Implementado |
 | [v0010](v0010-fastapi-http-api/) | API HTTP FastAPI | Implementado; testes não executados |
+| [v0011](v0011-user-registration-login/) | Cadastro, login e autenticação JWT | Implementado; migração Prisma pendente |

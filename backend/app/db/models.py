@@ -59,6 +59,7 @@ class UserProfileRecord(Base):
     id: Mapped[UUID] = mapped_column(PGUUID(as_uuid=True), primary_key=True, default=uuid4)
     name_or_nickname: Mapped[str] = mapped_column(String(120), nullable=False)
     email: Mapped[str] = mapped_column(String(320), unique=True, nullable=False)
+    password_hash: Mapped[str | None] = mapped_column(Text)
     age_range: Mapped[str | None] = mapped_column(String(40))
     objective: Mapped[UserObjective] = mapped_column(
         Enum(UserObjective, name="user_objective", values_callable=_enum_values, native_enum=True)

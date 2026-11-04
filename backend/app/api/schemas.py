@@ -2,7 +2,7 @@ from datetime import datetime
 from typing import Literal
 from uuid import UUID
 
-from pydantic import BaseModel, ConfigDict, Field, field_validator
+from pydantic import BaseModel, ConfigDict, Field, SecretStr, field_validator
 
 from app.models.nutrition import AnalysisResult, Product
 from app.models.user import UserProfile
@@ -28,7 +28,13 @@ class ProfilePayload(BaseModel):
     @classmethod
     def validate_email_shape(cls, value: str) -> str:
         local_part, separator, domain = value.partition("@")
-        if not separator or not local_part or "." not in domain or " " in value:
+        if (
+            not separator
+            or not local_part
+            or "@" in domain
+            or "." not in domain
+            or " " in value
+        ):
             raise ValueError("email must be a valid email address")
         return value.lower()
 
@@ -55,6 +61,31 @@ class ProfilePayload(BaseModel):
             preferences=self.food_preferences,
             onboarding_completed=self.onboarding_completed,
         )
+
+
+class RegisterPayload(ProfilePayload):
+    password: SecretStr = Field(min_length=8, max_length=128)
+
+
+class LoginPayload(BaseModel):
+    model_config = ConfigDict(extra="forbid", str_strip_whitespace=True)
+
+    email: str = Field(min_length=3, max_length=320)
+    password: SecretStr = Field(min_length=1, max_length=128)
+
+    @field_validator("email")
+    @classmethod
+    def normalize_email(cls, value: str) -> str:
+        local_part, separator, domain = value.partition("@")
+        if (
+            not separator
+            or not local_part
+            or "@" in domain
+            or "." not in domain
+            or " " in value
+        ):
+            raise ValueError("email must be a valid email address")
+        return value.lower()
 
 
 class ProfileResponse(BaseModel):
@@ -103,3 +134,10 @@ class CaptureHistoryResponse(BaseModel):
     source_status: CaptureStatus
     product: Product | None
     analysis: AnalysisResult | None
+
+
+class TokenResponse(BaseModel):
+    access_token: str
+    token_type: Literal["bearer"] = "bearer"
+    expires_in: int
+    user: ProfileResponse
