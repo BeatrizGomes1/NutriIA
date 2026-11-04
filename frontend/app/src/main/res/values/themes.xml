@@ -56,6 +56,22 @@
         <item name="iconGravity">textStart</item>
     </style>
 
+    <!-- Chip selecionável (cadastro e restrições): branco com borda; verde quando marcado. -->
+    <style name="Widget.NutriIA.Chip" parent="Widget.Material3.Chip.Filter">
+        <item name="chipBackgroundColor">@color/chip_background</item>
+        <item name="chipStrokeColor">@color/chip_stroke</item>
+        <item name="chipStrokeWidth">1dp</item>
+        <item name="chipCornerRadius">@dimen/chip_radius</item>
+        <item name="android:textColor">@color/chip_text</item>
+        <item name="android:textSize">14sp</item>
+        <item name="checkedIconTint">@color/green_primary</item>
+        <item name="chipIconTint">@color/text_primary</item>
+        <item name="chipIconSize">16dp</item>
+        <item name="closeIconSize">16dp</item>
+        <item name="chipMinHeight">36dp</item>
+        <item name="closeIconTint">@color/green_dark</item>
+    </style>
+
     <style name="TextAppearance.NutriIA.Link" parent="TextAppearance.Material3.LabelLarge">
         <item name="android:textColor">@color/green_primary</item>
         <item name="android:textStyle">bold</item>

@@ -5,7 +5,6 @@ import android.content.res.ColorStateList
 import android.view.View
 import android.widget.ImageView
 import android.widget.TextView
-import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.ContextCompat
 import androidx.core.view.ViewCompat
@@ -16,9 +15,14 @@ import com.uece.nutriia.databinding.IncludeBottomNavBinding
 import com.uece.nutriia.ui.escanear.EscanearActivity
 import com.uece.nutriia.ui.historico.HistoricoActivity
 import com.uece.nutriia.ui.inicio.InicioActivity
+import com.uece.nutriia.ui.perfil.PerfilActivity
+import com.uece.nutriia.ui.restricoes.RestricoesActivity
 
 enum class BottomTab {
-    INICIO, HISTORICO, ESCANEAR
+    INICIO, HISTORICO, ESCANEAR, RESTRICOES, PERFIL,
+
+    // Telas fora das abas (ex.: resultado da análise).
+    NENHUMA
 }
 
 object ScreenInsets {
@@ -44,6 +48,8 @@ object BottomNavigationBinder {
 
         styleItem(nav.navInicioIcon, nav.navInicioLabel, selected == BottomTab.INICIO, selectedColor, unselectedColor)
         styleItem(nav.navHistoricoIcon, nav.navHistoricoLabel, selected == BottomTab.HISTORICO, selectedColor, unselectedColor)
+        styleItem(nav.navRestricoesIcon, nav.navRestricoesLabel, selected == BottomTab.RESTRICOES, selectedColor, unselectedColor)
+        styleItem(nav.navPerfilIcon, nav.navPerfilLabel, selected == BottomTab.PERFIL, selectedColor, unselectedColor)
         nav.navEscanearLabel.setTextColor(
             if (selected == BottomTab.ESCANEAR) selectedColor else unselectedColor
         )
@@ -62,10 +68,10 @@ object BottomNavigationBinder {
             openTab(activity, EscanearActivity::class.java, selected == BottomTab.ESCANEAR)
         }
         nav.navRestricoes.setOnClickListener {
-            Toast.makeText(activity, R.string.coming_soon, Toast.LENGTH_SHORT).show()
+            openTab(activity, RestricoesActivity::class.java, selected == BottomTab.RESTRICOES)
         }
         nav.navPerfil.setOnClickListener {
-            Toast.makeText(activity, R.string.coming_soon, Toast.LENGTH_SHORT).show()
+            openTab(activity, PerfilActivity::class.java, selected == BottomTab.PERFIL)
         }
     }
 
