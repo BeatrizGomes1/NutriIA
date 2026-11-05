@@ -8,7 +8,7 @@ from datetime import datetime, timezone
 from typing import Any
 from uuid import UUID
 
-from sqlalchemy import select
+from sqlalchemy import func, or_, select
 from sqlalchemy.orm import Session, selectinload
 
 from app.db.models import (
@@ -283,9 +283,38 @@ class HistoryService:
         """Retorna o histórico de capturas, inclusive EANs não encontrados."""
         if not 1 <= limit <= 100 or offset < 0:
             raise ValueError("limit must be 1..100 and offset must be non-negative")
+        ranked_product_captures = (
+            select(
+                ProductCaptureRecord.id.label("capture_id"),
+                func.row_number()
+                .over(
+                    partition_by=(ProductCaptureRecord.user_id, ProductCaptureRecord.product_id),
+                    order_by=(
+                        ProductCaptureRecord.captured_at.desc(),
+                        ProductCaptureRecord.id.desc(),
+                    ),
+                )
+                .label("position"),
+            )
+            .where(
+                ProductCaptureRecord.user_id == UUID(str(user_id)),
+                ProductCaptureRecord.product_id.is_not(None),
+            )
+            .subquery()
+        )
         statement = (
             select(ProductCaptureRecord)
-            .where(ProductCaptureRecord.user_id == UUID(str(user_id)))
+            .where(
+                ProductCaptureRecord.user_id == UUID(str(user_id)),
+                or_(
+                    ProductCaptureRecord.product_id.is_(None),
+                    ProductCaptureRecord.id.in_(
+                        select(ranked_product_captures.c.capture_id).where(
+                            ranked_product_captures.c.position == 1
+                        )
+                    ),
+                ),
+            )
             .options(selectinload(ProductCaptureRecord.product))
             .order_by(ProductCaptureRecord.captured_at.desc(), ProductCaptureRecord.id.desc())
             .limit(limit)

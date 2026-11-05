@@ -37,6 +37,9 @@ def test_login_returns_access_token(auth_client):
             assert password == "a-strong-password"
             return user
 
+        def create_refresh_session(self, _user_id):
+            return "refresh-token-for-tests"
+
     auth_client.app.dependency_overrides[get_auth_service] = lambda: FakeAuthService()
 
     response = auth_client.post(
@@ -47,6 +50,7 @@ def test_login_returns_access_token(auth_client):
     assert response.status_code == 200
     assert response.json()["token_type"] == "bearer"
     assert response.json()["access_token"]
+    assert response.json()["refresh_token"] == "refresh-token-for-tests"
     assert response.json()["user"]["id"] == user.id
 
 
@@ -101,6 +105,9 @@ def test_login_token_authenticates_request_to_auth_me(auth_client):
         def authenticate(self, _email, _password):
             return user
 
+        def create_refresh_session(self, _user_id):
+            return "refresh-token-for-tests"
+
     class FakeProfileService:
         def get(self, user_id):
             assert str(user_id) == user.id
@@ -122,6 +129,73 @@ def test_login_token_authenticates_request_to_auth_me(auth_client):
 
     assert profile_response.status_code == 200
     assert profile_response.json()["id"] == user.id
+
+
+def test_refresh_rotates_session_and_returns_new_tokens(auth_client):
+    user = UserProfile(
+        id=str(uuid4()),
+        name="Ana",
+        email="ana@example.com",
+        goal="weight_loss",
+    )
+
+    class FakeAuthService:
+        def rotate_refresh_session(self, token):
+            assert token == "old-refresh-token-which-is-long-enough-for-the-request"
+            return user, "new-refresh-token"
+
+    auth_client.app.dependency_overrides[get_auth_service] = lambda: FakeAuthService()
+
+    response = auth_client.post(
+        "/api/v1/auth/refresh",
+        json={"refresh_token": "old-refresh-token-which-is-long-enough-for-the-request"},
+    )
+
+    assert response.status_code == 200
+    assert response.json()["refresh_token"] == "new-refresh-token"
+    assert response.json()["access_token"]
+
+
+def test_password_reset_request_is_generic_for_unknown_email(auth_client):
+    class FakeAuthService:
+        def issue_password_reset(self, _email):
+            return None
+
+    class FakeEmailService:
+        pass
+
+    from app.api.routes import get_password_reset_email_service
+
+    auth_client.app.dependency_overrides[get_auth_service] = lambda: FakeAuthService()
+    auth_client.app.dependency_overrides[get_password_reset_email_service] = lambda: FakeEmailService()
+
+    response = auth_client.post(
+        "/api/v1/auth/password-reset/request",
+        json={"email": "unknown@example.com"},
+    )
+
+    assert response.status_code == 202
+    assert "If the account exists" in response.json()["message"]
+
+
+def test_password_reset_confirm_uses_one_time_token(auth_client):
+    class FakeAuthService:
+        def reset_password(self, token, password):
+            assert token == "reset-token-which-is-long-enough-for-validation"
+            assert password == "new-strong-password"
+            return True
+
+    auth_client.app.dependency_overrides[get_auth_service] = lambda: FakeAuthService()
+
+    response = auth_client.post(
+        "/api/v1/auth/password-reset/confirm",
+        json={
+            "token": "reset-token-which-is-long-enough-for-validation",
+            "new_password": "new-strong-password",
+        },
+    )
+
+    assert response.status_code == 200
 
 
 def test_password_is_hashed_and_can_be_verified():

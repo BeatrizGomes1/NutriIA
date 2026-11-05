@@ -1,3 +1,5 @@
+import base64
+
 from google import genai
 
 from app.config.settings import Settings, get_settings
@@ -16,9 +18,25 @@ def _build_client(settings: Settings | None = None):
 
 
 def generate_response(prompt: str) -> str:
+    return _generate_interaction(prompt)
+
+
+def generate_image_response(prompt: str, image_data: bytes, mime_type: str) -> str:
+    if not image_data:
+        raise ValueError("Image must not be empty")
+    encoded_image = base64.b64encode(image_data).decode("ascii")
+    return _generate_interaction(
+        [
+            {"type": "text", "text": prompt},
+            {"type": "image", "data": encoded_image, "mime_type": mime_type},
+        ]
+    )
+
+
+def _generate_interaction(prompt: str | list[dict[str, str]]) -> str:
     global client
 
-    if not prompt or not prompt.strip():
+    if not prompt or (isinstance(prompt, str) and not prompt.strip()):
         raise ValueError("Prompt must not be empty")
 
     settings = get_settings()

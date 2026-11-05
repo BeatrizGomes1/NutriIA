@@ -72,6 +72,33 @@ class UserProfileRecord(Base):
     updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
 
 
+class RefreshSessionRecord(Base):
+    __tablename__ = "refresh_sessions"
+
+    id: Mapped[UUID] = mapped_column(PGUUID(as_uuid=True), primary_key=True, default=uuid4)
+    user_id: Mapped[UUID] = mapped_column(
+        PGUUID(as_uuid=True), ForeignKey("user_profiles.id", ondelete="CASCADE")
+    )
+    family_id: Mapped[UUID] = mapped_column(PGUUID(as_uuid=True), default=uuid4)
+    token_hash: Mapped[str] = mapped_column(String(64), unique=True, nullable=False)
+    expires_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+    revoked_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+
+
+class PasswordResetTokenRecord(Base):
+    __tablename__ = "password_reset_tokens"
+
+    id: Mapped[UUID] = mapped_column(PGUUID(as_uuid=True), primary_key=True, default=uuid4)
+    user_id: Mapped[UUID] = mapped_column(
+        PGUUID(as_uuid=True), ForeignKey("user_profiles.id", ondelete="CASCADE")
+    )
+    token_hash: Mapped[str] = mapped_column(String(64), unique=True, nullable=False)
+    expires_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+    consumed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+
+
 class ProductRecord(Base):
     __tablename__ = "products"
 
@@ -152,3 +179,6 @@ class IngredientMatchRecord(Base):
 Index("products_name_brand_idx", ProductRecord.name, ProductRecord.brand)
 Index("product_captures_user_id_captured_at_idx", ProductCaptureRecord.user_id, ProductCaptureRecord.captured_at.desc())
 Index("analysis_results_user_id_created_at_idx", AnalysisResultRecord.user_id, AnalysisResultRecord.created_at.desc())
+Index("refresh_sessions_user_id_revoked_at_idx", RefreshSessionRecord.user_id, RefreshSessionRecord.revoked_at)
+Index("refresh_sessions_family_id_idx", RefreshSessionRecord.family_id)
+Index("password_reset_tokens_user_id_consumed_at_idx", PasswordResetTokenRecord.user_id, PasswordResetTokenRecord.consumed_at)

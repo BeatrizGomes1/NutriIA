@@ -1,18 +1,22 @@
+from io import BytesIO
 from uuid import uuid4
 
 import pytest
 from fastapi.testclient import TestClient
+from PIL import Image
 
 from app.api.routes import (
     get_auth_service,
     get_current_profile,
     get_history_service,
     get_profile_service,
+    get_password_reset_email_service,
     get_workflow_service,
 )
 from app.api.schemas import ProfilePayload
 from app.config.settings import Settings
 from app.main import create_app
+from app.models.nutrition import Product, ProductSource
 from app.models.user import UserProfile
 from app.services.nutrition_workflow_service import CaptureAnalysisOutcome
 
@@ -47,6 +51,9 @@ def test_register_route_returns_bearer_token_and_profile(api_client):
             assert password == "a-strong-password"
             return profile.model_copy(update={"id": str(profile_id)})
 
+        def create_refresh_session(self, _user_id):
+            return "refresh-token-for-tests"
+
     api_client.app.dependency_overrides[get_auth_service] = lambda: FakeAuthService()
 
     response = api_client.post(
@@ -62,6 +69,7 @@ def test_register_route_returns_bearer_token_and_profile(api_client):
 
     assert response.status_code == 201
     assert response.json()["access_token"]
+    assert response.json()["refresh_token"] == "refresh-token-for-tests"
     assert response.json()["token_type"] == "bearer"
     assert response.json()["user"]["id"] == str(profile_id)
     assert "password" not in response.json()["user"]
@@ -147,6 +155,45 @@ def test_ean_capture_route_returns_capture_and_analysis_fields(api_client):
         "product": None,
         "analysis": None,
     }
+
+
+def test_label_photo_route_extracts_and_records_label(api_client, monkeypatch):
+    user_id = uuid4()
+    product = Product(
+        name="Produto fotografado",
+        source=ProductSource.LABEL,
+        ingredients_text="Açúcar, leite em pó",
+    )
+
+    class FakeWorkflowService:
+        def capture_label_product(self, requested_user_id, extracted_product):
+            assert requested_user_id == user_id
+            assert extracted_product.name == "Produto fotografado"
+            return CaptureAnalysisOutcome(
+                capture_id=str(uuid4()),
+                source_status="found",
+                product=extracted_product,
+                analysis=None,
+            )
+
+    from app.api import routes
+
+    monkeypatch.setattr(routes, "extract_product_from_label", lambda _data, _mime: product)
+    api_client.app.dependency_overrides[get_workflow_service] = lambda: FakeWorkflowService()
+    api_client.app.dependency_overrides[get_current_profile] = lambda: UserProfile(
+        id=str(user_id), name="Ana", email="ana@example.com", goal="weight_loss"
+    )
+    image_buffer = BytesIO()
+    Image.new("RGB", (1, 1), color="white").save(image_buffer, format="PNG")
+
+    response = api_client.post(
+        f"/api/v1/profiles/{user_id}/captures/label-photo",
+        files={"file": ("label.png", image_buffer.getvalue(), "image/png")},
+    )
+
+    assert response.status_code == 200
+    assert response.json()["source_status"] == "found"
+    assert response.json()["product"]["source"] == "label"
 
 
 def test_gemini_failure_returns_gateway_error_without_internal_details(api_client):

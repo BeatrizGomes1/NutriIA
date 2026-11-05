@@ -88,6 +88,39 @@ class LoginPayload(BaseModel):
         return value.lower()
 
 
+class RefreshPayload(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    refresh_token: SecretStr = Field(min_length=32, max_length=256)
+
+
+class PasswordResetRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid", str_strip_whitespace=True)
+
+    email: str = Field(min_length=3, max_length=320)
+
+    @field_validator("email")
+    @classmethod
+    def normalize_email(cls, value: str) -> str:
+        local_part, separator, domain = value.partition("@")
+        if (
+            not separator
+            or not local_part
+            or "@" in domain
+            or "." not in domain
+            or " " in value
+        ):
+            raise ValueError("email must be a valid email address")
+        return value.lower()
+
+
+class PasswordResetConfirm(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    token: SecretStr = Field(min_length=32, max_length=256)
+    new_password: SecretStr = Field(min_length=8, max_length=128)
+
+
 class ProfileResponse(BaseModel):
     id: UUID
     name_or_nickname: str
@@ -138,6 +171,7 @@ class CaptureHistoryResponse(BaseModel):
 
 class TokenResponse(BaseModel):
     access_token: str
+    refresh_token: str
     token_type: Literal["bearer"] = "bearer"
     expires_in: int
     user: ProfileResponse
