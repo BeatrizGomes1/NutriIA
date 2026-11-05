@@ -1,5 +1,7 @@
 from types import SimpleNamespace
 
+import base64
+
 import pytest
 
 from app.config.settings import Settings
@@ -72,6 +74,40 @@ def test_generate_response_rejects_empty_response(monkeypatch):
 
     with pytest.raises(RuntimeError, match="Gemini returned an empty response"):
         gemini_client.generate_response("prompt de teste")
+
+
+def test_generate_image_response_builds_interactions_image_input(monkeypatch):
+    captured = {}
+
+    class FakeResponse:
+        output_text = "JSON do rótulo"
+
+    class FakeInteractions:
+        def create(self, *, model, input):
+            captured["model"] = model
+            captured["input"] = input
+            return FakeResponse()
+
+    class FakeClient:
+        interactions = FakeInteractions()
+
+    monkeypatch.setattr(gemini_client, "client", FakeClient())
+    monkeypatch.setattr(
+        gemini_client,
+        "get_settings",
+        lambda: SimpleNamespace(gemini_api_key=None, gemini_model="gemini-3.6-flash"),
+    )
+
+    result = gemini_client.generate_image_response("leia o rótulo", b"image-bytes", "image/png")
+
+    assert result == "JSON do rótulo"
+    assert captured["model"] == "gemini-3.6-flash"
+    assert captured["input"][0] == {"type": "text", "text": "leia o rótulo"}
+    assert captured["input"][1] == {
+        "type": "image",
+        "data": base64.b64encode(b"image-bytes").decode("ascii"),
+        "mime_type": "image/png",
+    }
 
 
 def test_generate_response_wraps_interactions_api_errors(monkeypatch):

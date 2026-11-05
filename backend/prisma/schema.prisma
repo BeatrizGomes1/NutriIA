@@ -59,6 +59,7 @@ model UserProfile {
   id                    String           @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   name_or_nickname      String           @db.VarChar(120)
   email                 String           @unique @db.VarChar(320)
+  password_hash         String?          @db.Text
   age_range             String?          @db.VarChar(40)
   objective             UserObjective
   declared_allergies    String[]         @default([])
@@ -69,6 +70,8 @@ model UserProfile {
   updated_at            DateTime         @default(now()) @updatedAt @db.Timestamptz(6)
   product_captures      ProductCapture[]
   analysis_results      AnalysisResult[]
+  refresh_sessions      RefreshSession[]
+  password_reset_tokens PasswordResetToken[]
 
   @@map("user_profiles")
 }
@@ -148,4 +151,32 @@ model IngredientMatch {
   @@index([analysis_result_id])
   @@index([normalized_name])
   @@map("ingredient_matches")
+}
+
+model RefreshSession {
+  id          String       @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  user_id     String       @db.Uuid
+  family_id   String       @db.Uuid
+  token_hash  String       @unique @db.VarChar(64)
+  expires_at  DateTime     @db.Timestamptz(6)
+  revoked_at  DateTime?    @db.Timestamptz(6)
+  created_at  DateTime     @default(now()) @db.Timestamptz(6)
+  user        UserProfile  @relation(fields: [user_id], references: [id], onDelete: Cascade)
+
+  @@index([user_id, revoked_at])
+  @@index([family_id])
+  @@map("refresh_sessions")
+}
+
+model PasswordResetToken {
+  id          String       @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  user_id     String       @db.Uuid
+  token_hash  String       @unique @db.VarChar(64)
+  expires_at  DateTime     @db.Timestamptz(6)
+  consumed_at DateTime?    @db.Timestamptz(6)
+  created_at  DateTime     @default(now()) @db.Timestamptz(6)
+  user        UserProfile  @relation(fields: [user_id], references: [id], onDelete: Cascade)
+
+  @@index([user_id, consumed_at])
+  @@map("password_reset_tokens")
 }

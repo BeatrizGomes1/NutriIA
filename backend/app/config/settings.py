@@ -20,6 +20,17 @@ class Settings(BaseSettings):
     nutrition_provider: str = "mock"
     database_url: str | None = None
     analysis_prompt_version: str = "v0008"
+    jwt_secret_key: str | None = None
+    access_token_expire_minutes: int = 30
+    refresh_token_expire_days: int = 30
+    password_reset_token_expire_minutes: int = 20
+    smtp_host: str | None = None
+    smtp_port: int = 587
+    smtp_username: str | None = None
+    smtp_password: str | None = None
+    smtp_sender: str | None = None
+    smtp_use_ssl: bool = False
+    password_reset_url: str | None = None
 
     model_config = SettingsConfigDict(
         env_file=".env",

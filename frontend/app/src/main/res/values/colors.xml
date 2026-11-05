@@ -14,6 +14,9 @@
     <color name="text_secondary">#6B7280</color>
     <color name="text_muted">#8B958F</color>
     <color name="danger">#C23B3B</color>
+    <color name="danger_soft">#FBEAEA</color>
+    <color name="warning">#B7791F</color>
+    <color name="warning_soft">#FDF3E1</color>
     <color name="thumb_mint">#E7F4EC</color>
     <color name="thumb_peach">#F6E6D4</color>
     <color name="stroke">#E4EAE6</color>
