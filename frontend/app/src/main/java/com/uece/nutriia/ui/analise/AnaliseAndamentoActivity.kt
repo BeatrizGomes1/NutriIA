@@ -23,9 +23,11 @@ import com.uece.nutriia.ui.resultado.ResultadoActivity
 import kotlinx.coroutines.async
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+import java.io.File
 
 /**
- * Envia o EAN para POST /profiles/{id}/captures/ean e mostra o progresso.
+ * Envia o EAN (POST /profiles/{id}/captures/ean) ou a foto do rótulo
+ * (POST /profiles/{id}/captures/label-photo) e mostra o progresso.
  * O backend responde tudo de uma vez (não há status intermediário), então as
  * etapas avançam por tempo e a última só conclui quando a resposta chega.
  */
@@ -54,9 +56,17 @@ class AnaliseAndamentoActivity : AppCompatActivity() {
 
         binding.btnVerResultado.setOnClickListener { abrirResultado() }
 
-        val ean = intent.getStringExtra(EXTRA_EAN).orEmpty()
+        val ean = intent.getStringExtra(EXTRA_EAN)
+        val foto = intent.getStringExtra(EXTRA_FOTO)?.let(::File)
         lifecycleScope.launch {
-            val chamada = async { repository.analisarEan(ean) }
+            val chamada = async {
+                if (foto != null) {
+                    // A foto temporária não é mais necessária depois do envio.
+                    repository.analisarFotoRotulo(foto).also { foto.delete() }
+                } else {
+                    repository.analisarEan(ean.orEmpty())
+                }
+            }
 
             // Avança as três primeiras etapas enquanto aguarda o backend.
             for (i in 0 until etapas.lastIndex) {
@@ -100,11 +110,19 @@ class AnaliseAndamentoActivity : AppCompatActivity() {
 
     companion object {
         private const val EXTRA_EAN = "ean"
+        private const val EXTRA_FOTO = "foto"
         private const val TEMPO_ETAPA_MS = 700L
 
         fun abrir(context: Context, ean: String) {
             context.startActivity(Intent(context, AnaliseAndamentoActivity::class.java).apply {
                 putExtra(EXTRA_EAN, ean)
+            })
+        }
+
+        /** [foto] é um JPEG já preparado por [com.uece.nutriia.ui.escanear.PreparadorFoto]. */
+        fun abrirComFoto(context: Context, foto: File) {
+            context.startActivity(Intent(context, AnaliseAndamentoActivity::class.java).apply {
+                putExtra(EXTRA_FOTO, foto.absolutePath)
             })
         }
     }

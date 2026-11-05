@@ -1,11 +1,14 @@
 package com.uece.nutriia.ui.escanear
 
+import android.graphics.Bitmap
 import androidx.annotation.OptIn
 import androidx.appcompat.app.AppCompatActivity
 import androidx.camera.core.Camera
 import androidx.camera.core.CameraSelector
 import androidx.camera.core.ExperimentalGetImage
 import androidx.camera.core.ImageAnalysis
+import androidx.camera.core.ImageCapture
+import androidx.camera.core.ImageCaptureException
 import androidx.camera.core.ImageProxy
 import androidx.camera.core.Preview
 import androidx.camera.lifecycle.ProcessCameraProvider
@@ -21,7 +24,8 @@ import java.util.concurrent.Executors
 import java.util.concurrent.atomic.AtomicBoolean
 
 /**
- * Câmera (CameraX) + leitura de código de barras (ML Kit, modelo embutido no app).
+ * Câmera (CameraX) + leitura de código de barras (ML Kit, modelo embutido no app)
+ * + foto do rótulo para a análise por imagem.
  * A câmera segue o ciclo de vida da Activity: fecha no onStop e reabre no onStart.
  */
 class LeitorCodigoBarras(
@@ -35,6 +39,7 @@ class LeitorCodigoBarras(
     // Evita disparar várias análises para o mesmo produto.
     private val lido = AtomicBoolean(false)
     private var camera: Camera? = null
+    private var captura: ImageCapture? = null
     private var flashLigado = false
 
     val ativo: Boolean get() = camera != null
@@ -51,13 +56,18 @@ class LeitorCodigoBarras(
                     .setBackpressureStrategy(ImageAnalysis.STRATEGY_KEEP_ONLY_LATEST)
                     .build()
                     .also { it.setAnalyzer(executor, ::analisarQuadro) }
+                val foto = ImageCapture.Builder()
+                    .setCaptureMode(ImageCapture.CAPTURE_MODE_MAXIMIZE_QUALITY)
+                    .build()
+                    .also { captura = it }
 
                 provider.unbindAll()
                 camera = provider.bindToLifecycle(
                     activity,
                     CameraSelector.DEFAULT_BACK_CAMERA,
                     preview,
-                    analise
+                    analise,
+                    foto
                 )
                 flashLigado = false
             } catch (e: Exception) {
@@ -66,6 +76,33 @@ class LeitorCodigoBarras(
                 aoFalhar()
             }
         }, ContextCompat.getMainExecutor(activity))
+    }
+
+    /**
+     * Tira uma foto (para a análise do rótulo). Enquanto isso, a leitura de código
+     * de barras fica pausada; chame [retomar] para voltar a ler.
+     */
+    fun tirarFoto(aoCapturar: (Bitmap, Int) -> Unit, aoFalhar: () -> Unit) {
+        val atual = captura ?: return aoFalhar()
+        lido.set(true)
+        atual.takePicture(executor, object : ImageCapture.OnImageCapturedCallback() {
+            override fun onCaptureSuccess(imagem: ImageProxy) {
+                val rotacao = imagem.imageInfo.rotationDegrees
+                val bitmap = try {
+                    imagem.toBitmap()
+                } finally {
+                    imagem.close()
+                }
+                activity.runOnUiThread { aoCapturar(bitmap, rotacao) }
+            }
+
+            override fun onError(erro: ImageCaptureException) {
+                activity.runOnUiThread {
+                    lido.set(false)
+                    aoFalhar()
+                }
+            }
+        })
     }
 
     /** Volta a aceitar leituras (ex.: ao retornar do resultado). */

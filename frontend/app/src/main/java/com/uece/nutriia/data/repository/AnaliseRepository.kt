@@ -11,13 +11,17 @@ import com.uece.nutriia.data.remote.ApiResult
 import com.uece.nutriia.data.remote.NutriIaApi
 import com.uece.nutriia.data.remote.RetrofitClient
 import com.uece.nutriia.data.remote.chamarApi
+import okhttp3.MediaType.Companion.toMediaType
+import okhttp3.MultipartBody
+import okhttp3.RequestBody.Companion.asRequestBody
+import java.io.File
 import java.text.ParseException
 import java.text.SimpleDateFormat
 import java.util.Calendar
 import java.util.Locale
 import java.util.TimeZone
 
-/** Captura de produtos por EAN (consulta + análise por IA) e histórico. */
+/** Captura de produtos por EAN ou foto do rótulo (consulta + análise por IA) e histórico. */
 class AnaliseRepository(private val api: NutriIaApi = RetrofitClient.api) {
 
     suspend fun analisarEan(ean: String): ApiResult<CapturaResponse> {
@@ -28,6 +32,25 @@ class AnaliseRepository(private val api: NutriIaApi = RetrofitClient.api) {
                 502 to "Não foi possível consultar o produto ou gerar a análise agora. Tente novamente."
             )
         ) { api.capturarEan(userId, EanCaptureRequest(ean)) }
+    }
+
+    /** Envia a foto do rótulo (JPEG) para o backend extrair os dados e analisar. */
+    suspend fun analisarFotoRotulo(foto: File): ApiResult<CapturaResponse> {
+        val userId = SessionManager.userId ?: return ApiResult.Erro("Sessão não encontrada.", 401)
+        val parte = MultipartBody.Part.createFormData(
+            "file",
+            foto.name,
+            foto.asRequestBody("image/jpeg".toMediaType())
+        )
+        return chamarApi(
+            mapOf(
+                400 to "Não foi possível ler essa imagem. Tente outra foto.",
+                413 to "A foto é grande demais. Tente novamente.",
+                415 to "Formato de imagem não suportado. Use JPEG, PNG ou WEBP.",
+                502 to "Não foi possível ler o rótulo agora (a análise por foto usa o Gemini). Tente novamente.",
+                503 to "A análise por foto não está disponível no servidor no momento."
+            )
+        ) { api.capturarFotoRotulo(userId, parte) }
     }
 
     suspend fun historico(limite: Int = 50): ApiResult<List<Analise>> {
@@ -45,7 +68,10 @@ class AnaliseRepository(private val api: NutriIaApi = RetrofitClient.api) {
             StatusAnalise.deApi(item.analysis?.status)
         }
         return Analise(
-            nome = item.product?.nome ?: item.analysis?.nomeProduto ?: "Produto ${item.ean.orEmpty()}".trim(),
+            nome = item.product?.nome
+                ?: item.analysis?.nomeProduto
+                ?: item.ean?.let { "Produto $it" }
+                ?: "Produto lido pelo rótulo",
             marca = item.product?.marca ?: item.ean.orEmpty(),
             dataRelativa = dataRelativa(item.capturadaEm),
             status = status,

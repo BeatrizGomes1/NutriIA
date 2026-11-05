@@ -2,8 +2,11 @@ package com.uece.nutriia.data.repository
 
 import com.uece.nutriia.data.local.SessionManager
 import com.uece.nutriia.data.model.LoginRequest
+import com.uece.nutriia.data.model.MensagemResponse
 import com.uece.nutriia.data.model.PerfilRequest
 import com.uece.nutriia.data.model.PerfilResponse
+import com.uece.nutriia.data.model.RecuperarSenhaRequest
+import com.uece.nutriia.data.model.RedefinirSenhaRequest
 import com.uece.nutriia.data.model.TokenResponse
 import com.uece.nutriia.data.remote.ApiResult
 import com.uece.nutriia.data.remote.NutriIaApi
@@ -26,6 +29,22 @@ class AuthRepository(private val api: NutriIaApi = RetrofitClient.api) {
         return salvarSessao(resultado)
     }
 
+    /** Pede o e-mail de recuperação. O backend responde igual exista ou não a conta. */
+    suspend fun pedirRecuperacaoSenha(email: String): ApiResult<MensagemResponse> =
+        chamarApi(
+            mapOf(503 to "A recuperação de senha ainda não está configurada no servidor (SMTP).")
+        ) { api.pedirRecuperacaoSenha(RecuperarSenhaRequest(email)) }
+
+    suspend fun redefinirSenha(token: String, novaSenha: String): ApiResult<MensagemResponse> =
+        chamarApi(
+            mapOf(
+                400 to "Este link de recuperação é inválido ou já expirou. Peça um novo.",
+                422 to "Link inválido ou senha fora do tamanho permitido (8 a 128 caracteres)."
+            )
+        ) { api.redefinirSenha(RedefinirSenhaRequest(token, novaSenha)) }
+
+    // O backend não tem rota de logout: encerrar a sessão local basta,
+    // e o refresh token expira sozinho.
     fun sair() = SessionManager.encerrar()
 
     private fun salvarSessao(resultado: ApiResult<TokenResponse>): ApiResult<PerfilResponse> = when (resultado) {

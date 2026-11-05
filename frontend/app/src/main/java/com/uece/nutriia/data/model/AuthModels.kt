@@ -52,7 +52,26 @@ data class PerfilResponse(
 
 data class TokenResponse(
     @SerializedName("access_token") val accessToken: String,
+    @SerializedName("refresh_token") val refreshToken: String,
     @SerializedName("token_type") val tokenType: String,
     @SerializedName("expires_in") val expiraEmSegundos: Long,
     val user: PerfilResponse
+)
+
+data class RefreshRequest(
+    @SerializedName("refresh_token") val refreshToken: String
+)
+
+data class RecuperarSenhaRequest(
+    val email: String
+)
+
+data class RedefinirSenhaRequest(
+    val token: String,
+    @SerializedName("new_password") val novaSenha: String
+)
+
+/** Resposta simples ({"message": "..."}) das rotas de recuperação de senha. */
+data class MensagemResponse(
+    val message: String
 )

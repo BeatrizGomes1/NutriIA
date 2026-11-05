@@ -14,7 +14,8 @@ object RetrofitClient {
     private const val BASE_URL = BuildConfig.API_BASE_URL
 
     // Nunca grava senha nem token no logcat.
-    private val CAMPOS_SENSIVEIS = Regex("\"(password|access_token)\"\\s*:\\s*\"[^\"]*\"")
+    private val CAMPOS_SENSIVEIS =
+        Regex("\"(password|new_password|access_token|refresh_token|token)\"\\s*:\\s*\"[^\"]*\"")
 
     private val logging = HttpLoggingInterceptor { mensagem ->
         Log.i("NutriIaHttp", mensagem.replace(CAMPOS_SENSIVEIS, "\"$1\":\"***\""))
@@ -23,9 +24,15 @@ object RetrofitClient {
         redactHeader("Authorization")
     }
 
-    // Anexa o token salvo às requisições quando houver sessão.
+    private val renovador = RenovadorSessao { refreshApi }
+
+    // Anexa o token salvo; se ele já expirou, renova antes de enviar.
     private val authInterceptor = Interceptor { chain ->
-        val token = SessionManager.token
+        val token = when {
+            SessionManager.token == null -> null
+            SessionManager.acessoExpirado -> renovador.tokenValido() ?: SessionManager.token
+            else -> SessionManager.token
+        }
         val request = if (token != null) {
             chain.request().newBuilder()
                 .header("Authorization", "Bearer $token")
@@ -36,20 +43,30 @@ object RetrofitClient {
         chain.proceed(request)
     }
 
-    private val httpClient = OkHttpClient.Builder()
-        .addInterceptor(authInterceptor)
-        .addInterceptor(logging)
+    private fun builder() = OkHttpClient.Builder()
         .connectTimeout(30, TimeUnit.SECONDS)
-        // A análise com IA pode demorar mais que uma requisição comum.
-        .readTimeout(60, TimeUnit.SECONDS)
+        // A análise com IA (principalmente por foto) pode demorar.
+        .readTimeout(90, TimeUnit.SECONDS)
+        .writeTimeout(60, TimeUnit.SECONDS)
+
+    private val httpClient = builder()
+        .addInterceptor(authInterceptor)
+        .authenticator(renovador)
+        .addInterceptor(logging)
         .build()
 
-    val api: NutriIaApi by lazy {
-        Retrofit.Builder()
-            .baseUrl(BASE_URL)
-            .client(httpClient)
-            .addConverterFactory(GsonConverterFactory.create())
-            .build()
-            .create(NutriIaApi::class.java)
-    }
+    // Cliente só para o refresh: sem auth nem authenticator.
+    private val refreshClient = builder()
+        .addInterceptor(logging)
+        .build()
+
+    private fun retrofit(client: OkHttpClient) = Retrofit.Builder()
+        .baseUrl(BASE_URL)
+        .client(client)
+        .addConverterFactory(GsonConverterFactory.create())
+        .build()
+
+    val api: NutriIaApi by lazy { retrofit(httpClient).create(NutriIaApi::class.java) }
+
+    private val refreshApi: RefreshApi by lazy { retrofit(refreshClient).create(RefreshApi::class.java) }
 }

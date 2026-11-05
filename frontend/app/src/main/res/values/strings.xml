@@ -33,7 +33,6 @@
     <string name="flash">Flash</string>
     <string name="use_camera">Usar câmera</string>
     <string name="scan_info">O app analisa produtos industrializados por EAN ou pela foto da tabela nutricional e dos ingredientes.</string>
-    <string name="simulate_ean">Simular leitura do EAN</string>
     <string name="no_camera_access">Sem acesso à câmera?</string>
     <string name="marca_data_format">%1$s · %2$s</string>
     <string name="flash_on">Flash ligado</string>
@@ -44,7 +43,28 @@
     <string name="flash_needs_camera">Ative a câmera para usar o flash.</string>
     <string name="flash_unavailable">Este aparelho não tem flash.</string>
     <string name="logo_content_description">NutriIA</string>
-    <string name="password_recovery_unavailable">A recuperação de senha ainda não está disponível.</string>
+    <!-- Recuperação de senha -->
+    <string name="forgot_eyebrow">RECUPERAR ACESSO</string>
+    <string name="forgot_title">Esqueceu sua senha?</string>
+    <string name="forgot_subtitle">Informe o e-mail da sua conta. Enviaremos um link para você criar uma nova senha.</string>
+    <string name="forgot_send">Enviar link</string>
+    <string name="forgot_resend">Enviar de novo</string>
+    <string name="forgot_sent">Se houver uma conta com este e-mail, você vai receber um link que vale por 20 minutos. Abra o link neste celular ou toque em \"Já tenho o link\".</string>
+    <string name="forgot_have_link">Já tenho o link</string>
+    <string name="back_to_login">Voltar para o login</string>
+    <string name="sending">Enviando…</string>
+    <string name="reset_title">Crie uma nova senha</string>
+    <string name="reset_subtitle_link">Escolha uma nova senha para a sua conta.</string>
+    <string name="reset_subtitle_paste">Cole o link que chegou no seu e-mail e escolha uma nova senha.</string>
+    <string name="reset_link_label">Link do e-mail</string>
+    <string name="reset_link_hint">Cole aqui o link ou o código</string>
+    <string name="reset_new_password">Nova senha</string>
+    <string name="reset_confirm_password">Confirme a nova senha</string>
+    <string name="reset_confirm_hint">Repita a nova senha</string>
+    <string name="reset_save">Salvar nova senha</string>
+    <string name="reset_error_link">Cole o link que chegou no seu e-mail.</string>
+    <string name="reset_error_match">As senhas não são iguais.</string>
+    <string name="reset_done">Senha alterada. Entre com a nova senha.</string>
     <string name="status_attention">Consuma com atenção</string>
     <string name="status_insufficient">Informações insuficientes</string>
     <string name="status_not_found">Produto não encontrado</string>
@@ -58,7 +78,15 @@
     <string name="analyze">Analisar</string>
     <string name="cancel">Cancelar</string>
     <string name="invalid_ean">Digite apenas números (8 a 32 dígitos).</string>
-    <string name="ean_simulado_valor">7891000100103</string>
+    <string name="photo_label">Fotografar rótulo</string>
+    <string name="photo_label_camera_on">Câmera ligada. Enquadre a lista de ingredientes e toque em \"Fotografar rótulo\".</string>
+    <string name="photo_failed">Não foi possível tirar a foto. Tente de novo.</string>
+    <string name="photo_preparing">Preparando a foto…</string>
+    <string name="photo_invalid">Não foi possível abrir essa imagem.</string>
+    <string name="no_camera_title">Sem acesso à câmera?</string>
+    <string name="no_camera_type_ean">Digitar código de barras</string>
+    <string name="no_camera_pick_photo">Escolher foto do rótulo na galeria</string>
+    <string name="product_from_label">Produto lido pelo rótulo</string>
 
     <!-- Cadastro -->
     <string name="signup_eyebrow">CRIE SEU PERFIL</string>

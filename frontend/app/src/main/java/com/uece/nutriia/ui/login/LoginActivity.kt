@@ -8,7 +8,6 @@ import android.view.View
 import android.widget.Button
 import android.widget.EditText
 import android.widget.TextView
-import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import androidx.lifecycle.lifecycleScope
 import com.uece.nutriia.R
@@ -17,6 +16,7 @@ import com.uece.nutriia.data.remote.ApiResult
 import com.uece.nutriia.data.repository.AuthRepository
 import com.uece.nutriia.ui.cadastro.CadastroActivity
 import com.uece.nutriia.ui.inicio.InicioActivity
+import com.uece.nutriia.ui.senha.EsqueciSenhaActivity
 import kotlinx.coroutines.launch
 
 class LoginActivity : AppCompatActivity() {
@@ -80,8 +80,7 @@ class LoginActivity : AppCompatActivity() {
         val tvEsqueciSenha = findViewById<TextView>(R.id.tvEsqueciSenha)
         tvEsqueciSenha.paintFlags = tvEsqueciSenha.paintFlags or Paint.UNDERLINE_TEXT_FLAG
         tvEsqueciSenha.setOnClickListener {
-            // O backend ainda não tem rota de recuperação de senha.
-            Toast.makeText(this, R.string.password_recovery_unavailable, Toast.LENGTH_LONG).show()
+            EsqueciSenhaActivity.abrir(this, etEmail.text.toString().trim())
         }
     }
 

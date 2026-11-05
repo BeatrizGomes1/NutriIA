@@ -64,6 +64,13 @@ JWT_SECRET_KEY=<cole aqui o valor gerado pelo comando acima>
 
 - `NUTRITION_PROVIDER=mock` roda a análise sem IA real. Para usar o Gemini,
   troque para `gemini` e preencha `GEMINI_API_KEY`.
+- A **análise por foto do rótulo** sempre usa o Gemini para ler a imagem: sem
+  `GEMINI_API_KEY`, o app mostra que não foi possível ler o rótulo.
+- **Recuperação de senha** (opcional): preencha `PASSWORD_RESET_URL=nutriia://redefinir-senha`
+  (o link do e-mail abre direto o app) e os dados de SMTP (`SMTP_HOST`,
+  `SMTP_PORT`, `SMTP_USERNAME`, `SMTP_PASSWORD`, `SMTP_SENDER`). Com Gmail:
+  `smtp.gmail.com`, porta `587` e uma "senha de app" da conta Google. Sem SMTP,
+  o app avisa que a recuperação não está configurada.
 - O `.env` **nunca** vai para o Git (já está no `.gitignore`).
 
 ### 3.3 Instalar dependências e aplicar as migrações
@@ -132,25 +139,24 @@ No celular, ative a **Depuração USB** nas opções do desenvolvedor.
    (marque, por exemplo, alergia a **Leite**).
 2. Na aba **Escanear**:
    - **Usar câmera** lê o código de barras de um produto de verdade;
-   - **Simular leitura do EAN** analisa o leite condensado `7891000100103`;
-   - **Sem acesso à câmera?** permite digitar um código.
+   - **Fotografar rótulo** tira uma foto da lista de ingredientes (precisa do Gemini);
+   - **Sem acesso à câmera?** permite digitar um código ou escolher uma foto da galeria.
 3. Códigos úteis para teste:
 
 | EAN | Produto | Observação |
 |---|---|---|
 | `7891000100103` | Leite condensado | "Não recomendado" para quem marcou Leite |
-| `3017624010701` | Nutella | Rótulo em inglês: o provedor `mock` não reconhece "sugar" como açúcar |
+| `3017624010701` | Nutella | Rótulo em inglês: "sugar" é reconhecido como açúcar |
 | `0000000000000` | — | Produto não encontrado |
 
-4. O resultado fica salvo no **Histórico**; tocar em um item abre a análise sem
-   escanear de novo.
+4. O resultado fica salvo no **Histórico** (cada produto aparece uma vez, com a
+   leitura mais recente); tocar em um item abre a análise sem escanear de novo.
 
 ## 7. Bom saber
 
-- O login expira em **30 minutos** (o backend não tem renovação de sessão);
-  depois disso o app volta para a tela de login.
+- O login fica salvo por até 30 dias: o app renova a sessão sozinho
+  (`/auth/refresh`). Trocar a senha encerra as sessões abertas.
 - A tela "Analisando produto" avança os passos por tempo: o backend responde a
   análise de uma vez só.
-- "Esqueci minha senha" ainda não tem rota no backend; o app só mostra um aviso.
 - Se o Gradle reclamar de JDK, use o JDK embutido do Android Studio
   (*Settings > Build > Gradle > Gradle JDK*).

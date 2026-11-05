@@ -43,6 +43,27 @@
             android:windowSoftInputMode="adjustResize" />
 
         <activity
+            android:name=".ui.senha.EsqueciSenhaActivity"
+            android:exported="false"
+            android:windowSoftInputMode="adjustResize" />
+
+        <!-- Abre pelo link do e-mail de recuperação (PASSWORD_RESET_URL=nutriia://redefinir-senha). -->
+        <activity
+            android:name=".ui.senha.RedefinirSenhaActivity"
+            android:exported="true"
+            android:launchMode="singleTask"
+            android:windowSoftInputMode="adjustResize">
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data
+                    android:host="redefinir-senha"
+                    android:scheme="nutriia" />
+            </intent-filter>
+        </activity>
+
+        <activity
             android:name=".ui.inicio.InicioActivity"
             android:exported="false"
             android:launchMode="singleTop"

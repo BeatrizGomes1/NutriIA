@@ -8,10 +8,12 @@ import android.view.View
 import android.widget.EditText
 import android.widget.Toast
 import androidx.activity.enableEdgeToEdge
+import androidx.activity.result.PickVisualMediaRequest
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.ContextCompat
+import androidx.lifecycle.lifecycleScope
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import com.uece.nutriia.R
 import com.uece.nutriia.databinding.ActivityEscanearBinding
@@ -20,11 +22,21 @@ import com.uece.nutriia.ui.common.BottomNavigationBinder
 import com.uece.nutriia.ui.common.BottomTab
 import com.uece.nutriia.ui.common.ScreenInsets
 import com.uece.nutriia.ui.common.exigirSessao
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
+import java.io.File
 
 class EscanearActivity : AppCompatActivity() {
 
     private lateinit var binding: ActivityEscanearBinding
     private var leitor: LeitorCodigoBarras? = null
+
+    // Galeria do sistema: não precisa de permissão de armazenamento.
+    private val escolherFoto =
+        registerForActivityResult(ActivityResultContracts.PickVisualMedia()) { uri ->
+            if (uri != null) prepararFoto { PreparadorFoto.deUri(this, uri) }
+        }
 
     private val pedirPermissaoCamera =
         registerForActivityResult(ActivityResultContracts.RequestPermission()) { concedida ->
@@ -50,10 +62,8 @@ class EscanearActivity : AppCompatActivity() {
 
         binding.btnFlash.setOnClickListener { alternarFlash() }
         binding.btnUsarCamera.setOnClickListener { usarCamera() }
-        binding.btnSimularEan.setOnClickListener {
-            analisar(getString(R.string.ean_simulado_valor))
-        }
-        binding.txtSemCamera.setOnClickListener { pedirEanDigitado() }
+        binding.btnFotografarRotulo.setOnClickListener { fotografarRotulo() }
+        binding.txtSemCamera.setOnClickListener { mostrarOpcoesSemCamera() }
 
         // Se a permissão já foi dada antes, a câmera abre direto.
         if (temPermissaoCamera()) iniciarCamera()
@@ -111,6 +121,60 @@ class EscanearActivity : AppCompatActivity() {
             false -> R.string.flash_off
         }
         Toast.makeText(this, mensagem, Toast.LENGTH_SHORT).show()
+    }
+
+    private fun fotografarRotulo() {
+        val atual = leitor
+        if (atual == null || !atual.ativo) {
+            // Liga a câmera primeiro; o usuário enquadra o rótulo e toca de novo.
+            usarCamera()
+            if (temPermissaoCamera()) {
+                Toast.makeText(this, R.string.photo_label_camera_on, Toast.LENGTH_LONG).show()
+            }
+            return
+        }
+        binding.btnFotografarRotulo.isEnabled = false
+        atual.tirarFoto(
+            aoCapturar = { bitmap, rotacao ->
+                prepararFoto { PreparadorFoto.deBitmap(this, bitmap, rotacao) }
+            },
+            aoFalhar = {
+                binding.btnFotografarRotulo.isEnabled = true
+                Toast.makeText(this, R.string.photo_failed, Toast.LENGTH_SHORT).show()
+            }
+        )
+    }
+
+    // Reduz e salva a foto fora da thread principal e abre a análise.
+    private fun prepararFoto(preparar: () -> File) {
+        binding.btnFotografarRotulo.isEnabled = false
+        binding.btnFotografarRotulo.setText(R.string.photo_preparing)
+        lifecycleScope.launch {
+            val foto = runCatching { withContext(Dispatchers.IO) { preparar() } }.getOrNull()
+            binding.btnFotografarRotulo.isEnabled = true
+            binding.btnFotografarRotulo.setText(R.string.photo_label)
+            if (foto == null) {
+                leitor?.retomar()
+                Toast.makeText(this@EscanearActivity, R.string.photo_invalid, Toast.LENGTH_SHORT).show()
+            } else {
+                AnaliseAndamentoActivity.abrirComFoto(this@EscanearActivity, foto)
+            }
+        }
+    }
+
+    private fun mostrarOpcoesSemCamera() {
+        val opcoes = arrayOf(getString(R.string.no_camera_type_ean), getString(R.string.no_camera_pick_photo))
+        MaterialAlertDialogBuilder(this)
+            .setTitle(R.string.no_camera_title)
+            .setItems(opcoes) { _, escolha ->
+                when (escolha) {
+                    0 -> pedirEanDigitado()
+                    else -> escolherFoto.launch(
+                        PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly)
+                    )
+                }
+            }
+            .show()
     }
 
     private fun pedirEanDigitado() {

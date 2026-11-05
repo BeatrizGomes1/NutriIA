@@ -165,14 +165,15 @@
                     android:textSize="13sp" />
             </LinearLayout>
 
+            <!-- Foto do rótulo: para produtos sem código de barras ou não encontrados. -->
             <com.google.android.material.button.MaterialButton
-                android:id="@+id/btnSimularEan"
+                android:id="@+id/btnFotografarRotulo"
                 style="@style/Widget.NutriIA.Button.Primary"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="18dp"
-                android:text="@string/simulate_ean"
-                app:icon="@drawable/ic_search" />
+                android:text="@string/photo_label"
+                app:icon="@drawable/ic_camera" />
 
             <TextView
                 android:id="@+id/txtSemCamera"

@@ -228,7 +228,8 @@ class ResultadoActivity : AppCompatActivity() {
         }
 
         /** Converte a resposta da captura no mesmo modelo usado pelo histórico. */
-        fun paraAnalise(context: Context, resposta: CapturaResponse, ean: String): Analise {
+        /** [ean] é null quando a análise veio da foto do rótulo. */
+        fun paraAnalise(context: Context, resposta: CapturaResponse, ean: String?): Analise {
             val status = if (resposta.statusOrigem == StatusOrigem.NAO_ENCONTRADO) {
                 StatusAnalise.NAO_ENCONTRADO
             } else {
@@ -237,7 +238,8 @@ class ResultadoActivity : AppCompatActivity() {
             return Analise(
                 nome = resposta.product?.nome
                     ?: resposta.analysis?.nomeProduto
-                    ?: context.getString(R.string.product_fallback_name, ean),
+                    ?: ean?.let { context.getString(R.string.product_fallback_name, it) }
+                    ?: context.getString(R.string.product_from_label),
                 marca = resposta.product?.marca.orEmpty(),
                 dataRelativa = "hoje",
                 status = status,
