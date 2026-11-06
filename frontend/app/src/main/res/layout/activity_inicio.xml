@@ -28,7 +28,7 @@
             android:orientation="vertical"
             android:paddingTop="12dp">
 
-            <include layout="@layout/include_app_logo" />
+            <include layout="@layout/view_logo" />
 
             <TextView
                 android:id="@+id/txtGreeting"
