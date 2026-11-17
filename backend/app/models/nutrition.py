@@ -1,8 +1,15 @@
 from enum import StrEnum
 from datetime import datetime
-from typing import Any
+from typing import Any, Literal
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, ConfigDict, Field, model_validator
+
+
+class NutritionBasis(StrEnum):
+    PER_100G = "per_100g"
+    PER_100ML = "per_100ml"
+    PER_SERVING = "per_serving"
+    UNKNOWN = "unknown"
 
 
 class AnalysisStatus(StrEnum):
@@ -26,14 +33,38 @@ class NutritionFacts(BaseModel):
     incompletos. Valores negativos, porém, não são válidos neste contexto.
     """
 
-    calories_kcal: float | None = Field(default=None, ge=0)
-    sugars_g: float | None = Field(default=None, ge=0)
-    carbohydrates_g: float | None = Field(default=None, ge=0)
-    protein_g: float | None = Field(default=None, ge=0)
-    sodium_mg: float | None = Field(default=None, ge=0)
+    model_config = ConfigDict(allow_inf_nan=False)
+
+    basis: NutritionBasis = NutritionBasis.UNKNOWN
+    serving_quantity: float | None = Field(default=None, gt=0)
+    serving_unit: Literal["g", "ml"] | None = None
+
+    @model_validator(mode="after")
+    def validate_serving(self):
+        if (self.serving_quantity is None) != (self.serving_unit is None):
+            raise ValueError("serving_quantity and serving_unit must be supplied together")
+        return self
+
+    calories_kcal: float | None = Field(default=None, ge=0, strict=True)
+    sugars_g: float | None = Field(default=None, ge=0, strict=True)
+    carbohydrates_g: float | None = Field(default=None, ge=0, strict=True)
+    protein_g: float | None = Field(default=None, ge=0, strict=True)
+    fiber_g: float | None = Field(default=None, ge=0, strict=True)
+    sodium_mg: float | None = Field(default=None, ge=0, strict=True)
 
     def has_any_value(self) -> bool:
-        return any(value is not None for value in self.model_dump().values())
+        return any(getattr(self, field) is not None for field in (
+            "calories_kcal", "sugars_g", "carbohydrates_g", "protein_g", "fiber_g", "sodium_mg"
+        ))
+
+
+class FoodSafetyData(BaseModel):
+    """Source declarations, never inferred from a product name or nutrient table."""
+
+    ingredients_status: Literal["unknown", "complete", "incomplete", "unreadable"] = "unknown"
+    allergen_statement: str | None = None
+    cross_contact_statement: str | None = None
+    ingredient_source_text: str | None = None
 
 
 class Product(BaseModel):
@@ -46,6 +77,21 @@ class Product(BaseModel):
     ingredients_text: str | None = None
     serving_information: dict[str, Any] | None = None
     nutrition: NutritionFacts = Field(default_factory=NutritionFacts)
+    food_safety: FoodSafetyData = Field(default_factory=FoodSafetyData)
+
+    @model_validator(mode="after")
+    def validate_ingredient_quality(self):
+        from app.utils.ingredient_quality import separate_ingredients
+
+        raw = self.ingredients_text or ", ".join(self.ingredients)
+        clean, contaminated = separate_ingredients(raw)
+        if contaminated:
+            self.food_safety.ingredient_source_text = self.food_safety.ingredient_source_text or raw
+            if self.food_safety.ingredients_status != "unreadable":
+                self.food_safety.ingredients_status = "incomplete"
+            self.ingredients_text = clean or None
+            self.ingredients = [part.strip() for part in clean.split(",") if part.strip()]
+        return self
 
     def has_identity(self) -> bool:
         return bool((self.name and self.name.strip()) or (self.ean and self.ean.strip()))

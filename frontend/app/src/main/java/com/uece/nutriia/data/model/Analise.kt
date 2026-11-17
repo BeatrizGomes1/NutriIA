@@ -12,7 +12,9 @@ data class Analise(
     // Dados completos para abrir o resultado sem escanear de novo.
     val ean: String? = null,
     val produto: ProdutoDto? = null,
-    val analise: AnaliseDto? = null
+    val analise: AnaliseDto? = null,
+    val origemAnalise: String? = null,
+    val processamento: String? = null
 ) : Serializable {
     val recomendado: Boolean get() = status == StatusAnalise.RECOMENDADO
     val naoRecomendado: Boolean get() = status == StatusAnalise.NAO_RECOMENDADO

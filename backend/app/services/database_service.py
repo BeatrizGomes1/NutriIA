@@ -73,7 +73,14 @@ def _profile_values(profile: UserProfile) -> dict[str, Any]:
 
 def product_to_domain(record: ProductRecord) -> Product:
     nutrition_data = record.nutrition_table or {}
-    nutrition_data = nutrition_data.get("per_100g", nutrition_data)
+    food_safety = nutrition_data.get("food_safety", {})
+    if nutrition_data.get("schema_version") == 2:
+        nutrition_data = nutrition_data.get("values", {})
+    else:
+        # Legacy per_100g was assigned automatically, including label photos.
+        # Preserve numbers, but never trust that historical basis.
+        nutrition_data = dict(nutrition_data.get("per_100g", nutrition_data))
+        nutrition_data["basis"] = "unknown"
     return Product(
         id=str(record.id),
         name=record.name,
@@ -84,6 +91,7 @@ def product_to_domain(record: ProductRecord) -> Product:
         ingredients=list(record.ingredients_normalized or []),
         serving_information=record.serving_information,
         nutrition=NutritionFacts.model_validate(nutrition_data),
+        food_safety=food_safety,
     )
 
 
@@ -94,12 +102,19 @@ def product_values(product: Product, *, fetched_at: datetime | None = None) -> d
     parts = [part.strip() for part in re.split(r"[,;]", raw_ingredients or "") if part.strip()]
     normalized = list(dict.fromkeys(value for value in (normalize_text(part) for part in parts) if value))
     nutrition = product.nutrition.model_dump(mode="json", exclude_none=True)
+    safety = product.food_safety.model_dump(mode="json", exclude_defaults=True)
     return {
         "ean": product.ean,
         "name": product.name,
         "brand": product.brand,
         "serving_information": product.serving_information,
-        "nutrition_table": {"basis": "per_100g", "per_100g": nutrition} if nutrition else None,
+        "nutrition_table": (
+            {"schema_version": 2, "values": nutrition, **({"food_safety": safety} if safety else {})}
+            if safety or product.nutrition.has_any_value()
+            or product.nutrition.basis != "unknown"
+            or product.nutrition.serving_quantity is not None
+            else None
+        ),
         "ingredients_raw": raw_ingredients,
         "ingredients_normalized": normalized,
         "source_reference": f"https://world.openfoodfacts.org/product/{product.ean}" if product.ean else None,
@@ -326,12 +341,13 @@ class HistoryService:
             for capture in captures:
                 product = product_to_domain(capture.product) if capture.product else None
                 analysis = None
-                if capture.product_id:
+                if capture.product_id and capture.analysis_id:
                     analysis_row = session.scalar(
                         select(AnalysisResultRecord)
                         .where(
                             AnalysisResultRecord.user_id == capture.user_id,
                             AnalysisResultRecord.product_id == capture.product_id,
+                            AnalysisResultRecord.id == capture.analysis_id,
                         )
                         .options(
                             selectinload(AnalysisResultRecord.ingredient_matches),
@@ -349,6 +365,9 @@ class HistoryService:
                     source_status=capture.source_status.value,
                     product=product,
                     analysis=analysis,
+                    request_id=str(capture.request_id) if capture.request_id else None,
+                    analysis_origin=capture.analysis_origin,
+                    processing_status=capture.processing_status or "unlinked",
                 ))
             return results
 
@@ -361,3 +380,6 @@ class CaptureHistoryItem:
     source_status: str
     product: Product | None
     analysis: AnalysisResult | None
+    request_id: str | None = None
+    analysis_origin: str | None = None
+    processing_status: str = "unlinked"

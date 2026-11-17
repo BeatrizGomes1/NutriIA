@@ -14,3 +14,4 @@
 | [v0010](v0010-fastapi-http-api/) | API HTTP FastAPI | Implementado; testes não executados |
 | [v0011](v0011-user-registration-login/) | Cadastro, login e autenticação JWT | Implementado; migração Prisma pendente |
 | [v0012](v0012-auth-refresh-reset-label-photo-and-ingredient-aliases/) | Refresh/reset, análise por foto e aliases de ingredientes | Implementado; migração pendente |
+| [v0013](v0013-deterministic-nutrition-and-capture-flow/) | Deterministic nutrition and reliable capture results | Validated: 324 tests; Prisma diff 0; debug APK built |

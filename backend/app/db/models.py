@@ -127,6 +127,10 @@ class ProductCaptureRecord(Base):
     )
     ean: Mapped[str | None] = mapped_column(String(32))
     image_reference: Mapped[str | None] = mapped_column(Text)
+    request_id: Mapped[UUID | None] = mapped_column(PGUUID(as_uuid=True), unique=True)
+    analysis_id: Mapped[UUID | None] = mapped_column(PGUUID(as_uuid=True), ForeignKey("analysis_results.id", ondelete="SET NULL"))
+    analysis_origin: Mapped[str | None] = mapped_column(String(16))
+    processing_status: Mapped[str | None] = mapped_column(String(16))
     captured_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
     source_status: Mapped[SourceStatus] = mapped_column(
         Enum(SourceStatus, name="source_status", values_callable=_enum_values, native_enum=True)

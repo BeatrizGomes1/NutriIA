@@ -137,6 +137,16 @@
                 android:layout_height="wrap_content"
                 android:orientation="vertical" />
 
+            <LinearLayout
+                android:id="@+id/tabelaNutricional"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="18dp"
+                android:background="@drawable/bg_card"
+                android:padding="14dp"
+                android:orientation="vertical"
+                android:visibility="gone" />
+
             <!-- Ingredientes -->
             <TextView
                 android:id="@+id/tituloIngredientes"
@@ -188,6 +198,29 @@
                     android:textSize="13sp"
                     android:visibility="gone" />
             </LinearLayout>
+
+            <!-- Informacoes nutricionais adicionais -->
+            <TextView
+                android:id="@+id/tituloInformacoesNutricionais"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="22dp"
+                android:fontFamily="sans-serif-medium"
+                android:text="@string/show_analysis_details"
+                android:minHeight="48dp"
+                android:gravity="center_vertical"
+                android:clickable="true"
+                android:focusable="true"
+                android:textColor="@color/green_primary"
+                android:textSize="14sp"
+                android:textStyle="bold" />
+
+            <LinearLayout
+                android:id="@+id/listaInformacoesNutricionais"
+                android:visibility="gone"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical" />
 
             <TextView
                 android:id="@+id/txtAviso"
