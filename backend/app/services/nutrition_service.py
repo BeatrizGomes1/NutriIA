@@ -1,8 +1,8 @@
 from app.models.nutrition import (
     AnalysisContext,
     AnalysisResult,
-    AnalysisStatus,
     Product,
+    AnalysisStatus,
 )
 from app.models.user import UserProfile
 
@@ -12,8 +12,12 @@ from .analysis_provider import (
     AnalysisProvider,
     GeminiAnalysisProvider,
     MockAnalysisProvider,
-    parse_provider_result,
 )
+from .food_safety import deterministic_result, NO_GUARANTEE
+from .nutrition_observations import append_nutrition
+from .nutrition_observations import verified_explanations
+from .goal_assessment import assess_goal
+from .optional_enrichment import enrich
 
 
 def build_analysis_provider(provider_name: str | None = None) -> AnalysisProvider:
@@ -26,7 +30,7 @@ def build_analysis_provider(provider_name: str | None = None) -> AnalysisProvide
 
 
 class NutritionService:
-    """Prepara os dados e delega a análise final a um provedor de IA."""
+    """Aplica regras de segurança antes de delegar a análise ao provedor."""
 
     def __init__(self, provider: AnalysisProvider | None = None):
         self.provider = provider or build_analysis_provider()
@@ -55,18 +59,30 @@ class NutritionService:
     def analyze(self, product: Product, profile: UserProfile) -> AnalysisResult:
         context = self.prepare(product, profile)
 
-        if context.blocking_reasons:
-            return AnalysisResult(
-                status=AnalysisStatus.INSUFFICIENT_INFORMATION,
-                product_name=product.name or product.ean,
-                summary="Informações insuficientes.",
-                reasons=context.blocking_reasons,
-                provider="service_guardrail",
-            )
+        guarded = deterministic_result(context)
+        if guarded is not None:
+            return append_nutrition(guarded, context)
 
-        provider_name = getattr(self.provider, "name", self.provider.__class__.__name__)
-        response = self.provider(context)
-        return parse_provider_result(response, provider_name, context)
+        reasons, evidence = verified_explanations(context)
+        assessment = assess_goal(product.nutrition, str(profile.goal or ""))
+        insufficient = assessment.state in {"inconsistent", "insufficient"} and str(profile.goal or "") in {
+            "muscle_gain", "weight_loss"}
+        if product.nutrition.basis == "unknown" and product.nutrition.has_any_value():
+            insufficient = True
+        if not product.nutrition.has_any_value():
+            insufficient = True
+        result = AnalysisResult(
+            status=AnalysisStatus.INSUFFICIENT_INFORMATION if insufficient else AnalysisStatus.ATTENTION,
+            product_name=product.name or product.ean,
+            summary=" ".join(reasons[:2]) if reasons else "Faltam dados para concluir a avaliação nutricional.",
+            reasons=[*reasons, NO_GUARANTEE],
+            evidence=evidence, provider="deterministic_nutrition",
+        )
+        settings = get_settings()
+        if not settings.gemini_enrichment_enabled or not reasons:
+            return result
+        # Only reorder verified explanations. Safety status and conflicts are immutable.
+        return enrich(result, context, self.provider, settings.gemini_enrichment_timeout_seconds)
 
 
 def analyze_product(

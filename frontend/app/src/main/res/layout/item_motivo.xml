@@ -41,5 +41,16 @@
             android:textColor="@color/text_secondary"
             android:textSize="13sp"
             tools:text="O ingrediente indica presença de lactose." />
+        <TextView
+            android:id="@+id/btnVerOriginais"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:minHeight="48dp"
+            android:gravity="center_vertical"
+            android:background="?attr/selectableItemBackground"
+            android:text="@string/show_label_details"
+            android:textColor="@color/green_primary"
+            android:textSize="13sp"
+            android:visibility="gone" />
     </LinearLayout>
 </LinearLayout>

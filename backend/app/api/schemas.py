@@ -151,6 +151,7 @@ class EanCaptureRequest(BaseModel):
     model_config = ConfigDict(extra="forbid", str_strip_whitespace=True)
 
     ean: str = Field(min_length=8, max_length=32, pattern=r"^[0-9]+$")
+    request_id: UUID | None = None
 
 
 class CaptureAnalysisResponse(BaseModel):
@@ -158,6 +159,9 @@ class CaptureAnalysisResponse(BaseModel):
     source_status: CaptureStatus
     product: Product | None
     analysis: AnalysisResult | None
+    request_id: UUID | None = None
+    analysis_origin: str | None = None
+    processing_status: str = "completed"
 
 
 class CaptureHistoryResponse(BaseModel):
@@ -167,6 +171,9 @@ class CaptureHistoryResponse(BaseModel):
     source_status: CaptureStatus
     product: Product | None
     analysis: AnalysisResult | None
+    request_id: UUID | None = None
+    analysis_origin: str | None = None
+    processing_status: str = "unlinked"
 
 
 class TokenResponse(BaseModel):

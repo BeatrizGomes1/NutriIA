@@ -14,35 +14,42 @@ import com.uece.nutriia.data.remote.chamarApi
 import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.MultipartBody
 import okhttp3.RequestBody.Companion.asRequestBody
+import okhttp3.RequestBody.Companion.toRequestBody
 import java.io.File
 import java.text.ParseException
 import java.text.SimpleDateFormat
 import java.util.Calendar
 import java.util.Locale
 import java.util.TimeZone
+import java.util.UUID
 
 /** Captura de produtos por EAN ou foto do rótulo (consulta + análise por IA) e histórico. */
-class AnaliseRepository(private val api: NutriIaApi = RetrofitClient.api) {
+class AnaliseRepository(private val api: NutriIaApi = RetrofitClient.api,
+                       private val userIdProvider: () -> String? = { SessionManager.userId }) {
 
-    suspend fun analisarEan(ean: String): ApiResult<CapturaResponse> {
-        val userId = SessionManager.userId ?: return ApiResult.Erro("Sessão não encontrada.", 401)
-        return chamarApi(
+    suspend fun analisarEan(ean: String, tentativaId: String = UUID.randomUUID().toString()): ApiResult<CapturaResponse> {
+        val userId = userIdProvider() ?: return ApiResult.Erro("Sessão não encontrada.", 401)
+        val resposta = chamarApi(
             mapOf(
                 422 to "Código de barras inválido. Use apenas números (8 a 32 dígitos).",
                 502 to "Não foi possível consultar o produto ou gerar a análise agora. Tente novamente."
             )
-        ) { api.capturarEan(userId, EanCaptureRequest(ean)) }
+        ) { api.capturarEan(userId, EanCaptureRequest(ean, tentativaId)) }
+        return if (resposta is ApiResult.Erro && (resposta.resultadoNaoConfirmado || resposta.codigo in setOf(500, 502, 503, 504)) ||
+            resposta is ApiResult.Sucesso && resposta.dados.processamento == "pending") {
+            ConciliadorCaptura.resolver(tentativaId) { chamarApi { api.resultadoTentativa(userId, tentativaId) } }
+        } else resposta
     }
 
     /** Envia a foto do rótulo (JPEG) para o backend extrair os dados e analisar. */
-    suspend fun analisarFotoRotulo(foto: File): ApiResult<CapturaResponse> {
-        val userId = SessionManager.userId ?: return ApiResult.Erro("Sessão não encontrada.", 401)
+    suspend fun analisarFotoRotulo(foto: File, tentativaId: String = UUID.randomUUID().toString()): ApiResult<CapturaResponse> {
+        val userId = userIdProvider() ?: return ApiResult.Erro("Sessão não encontrada.", 401)
         val parte = MultipartBody.Part.createFormData(
             "file",
             foto.name,
             foto.asRequestBody("image/jpeg".toMediaType())
         )
-        return chamarApi(
+        val resposta = chamarApi(
             mapOf(
                 400 to "Não foi possível ler essa imagem. Tente outra foto.",
                 413 to "A foto é grande demais. Tente novamente.",
@@ -50,11 +57,15 @@ class AnaliseRepository(private val api: NutriIaApi = RetrofitClient.api) {
                 502 to "Não foi possível ler o rótulo agora (a análise por foto usa o Gemini). Tente novamente.",
                 503 to "A análise por foto não está disponível no servidor no momento."
             )
-        ) { api.capturarFotoRotulo(userId, parte) }
+        ) { api.capturarFotoRotulo(userId, parte, tentativaId.toRequestBody("text/plain".toMediaType())) }
+        return if (resposta is ApiResult.Erro && (resposta.resultadoNaoConfirmado || resposta.codigo in setOf(500, 502, 503, 504)) ||
+            resposta is ApiResult.Sucesso && resposta.dados.processamento == "pending") {
+            ConciliadorCaptura.resolver(tentativaId) { chamarApi { api.resultadoTentativa(userId, tentativaId) } }
+        } else resposta
     }
 
     suspend fun historico(limite: Int = 50): ApiResult<List<Analise>> {
-        val userId = SessionManager.userId ?: return ApiResult.Erro("Sessão não encontrada.", 401)
+        val userId = userIdProvider() ?: return ApiResult.Erro("Sessão não encontrada.", 401)
         return when (val resultado = chamarApi { api.historicoCapturas(userId, limite) }) {
             is ApiResult.Sucesso -> ApiResult.Sucesso(resultado.dados.mapIndexed(::paraAnalise))
             is ApiResult.Erro -> resultado
@@ -78,7 +89,9 @@ class AnaliseRepository(private val api: NutriIaApi = RetrofitClient.api) {
             thumbPeach = indice % 3 == 2,
             ean = item.ean,
             produto = item.product,
-            analise = item.analysis
+            analise = item.analysis,
+            origemAnalise = item.origemAnalise,
+            processamento = item.processamento
         )
     }
 

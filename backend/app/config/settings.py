@@ -1,6 +1,7 @@
 from functools import lru_cache
 
 from pydantic_settings import BaseSettings, SettingsConfigDict
+from pydantic import Field
 
 
 class Settings(BaseSettings):
@@ -18,6 +19,8 @@ class Settings(BaseSettings):
     gemini_api_key: str | None = None
     gemini_model: str = "gemini-3.6-flash"
     nutrition_provider: str = "mock"
+    gemini_enrichment_enabled: bool = False
+    gemini_enrichment_timeout_seconds: float = Field(default=3.0, gt=0, le=10, allow_inf_nan=False)
     database_url: str | None = None
     analysis_prompt_version: str = "v0008"
     jwt_secret_key: str | None = None

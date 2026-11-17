@@ -14,7 +14,7 @@ def _build_client(settings: Settings | None = None):
     if not api_key:
         return None
 
-    return genai.Client(api_key=api_key)
+    return genai.Client(api_key=api_key, http_options={"timeout": 20000, "retry_options": {"attempts": 1}})
 
 
 def generate_response(prompt: str) -> str:
@@ -47,9 +47,11 @@ def _generate_interaction(prompt: str | list[dict[str, str]]) -> str:
         raise RuntimeError("GEMINI_API_KEY is not configured")
 
     try:
+        from app.services.optional_enrichment import OPTIONAL_TIMEOUT
         response = client.interactions.create(
             model=settings.gemini_model,
             input=prompt,
+            timeout=OPTIONAL_TIMEOUT.get() or 20.0,
         )
     except Exception as error:
         raise RuntimeError("Failed to communicate with Gemini") from error

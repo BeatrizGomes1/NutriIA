@@ -2,7 +2,7 @@ import logging
 from io import BytesIO
 from uuid import UUID
 
-from fastapi import APIRouter, BackgroundTasks, Depends, File, HTTPException, Query, Request, UploadFile
+from fastapi import APIRouter, BackgroundTasks, Depends, File, Form, HTTPException, Query, Request, UploadFile
 from PIL import Image, UnidentifiedImageError
 
 from app.api.schemas import (
@@ -253,8 +253,18 @@ def capture_product_by_ean(
     service: NutritionWorkflowService = Depends(get_workflow_service),
 ) -> CaptureAnalysisResponse:
     _ensure_owner(user_id, current_profile)
-    outcome = service.capture_ean(user_id, payload.ean)
+    outcome = (service.capture_ean(user_id, payload.ean, request_id=payload.request_id)
+               if payload.request_id else service.capture_ean(user_id, payload.ean))
     return CaptureAnalysisResponse.model_validate(outcome, from_attributes=True)
+
+
+@router.get("/profiles/{user_id}/captures/requests/{request_id}",
+            response_model=CaptureAnalysisResponse, tags=["products"])
+def capture_request_result(user_id: UUID, request_id: UUID,
+    current_profile: UserProfile = Depends(get_current_profile),
+    service: NutritionWorkflowService = Depends(get_workflow_service)):
+    _ensure_owner(user_id, current_profile)
+    return CaptureAnalysisResponse.model_validate(service.request_result(user_id, request_id), from_attributes=True)
 
 
 @router.post(
@@ -265,6 +275,7 @@ def capture_product_by_ean(
 def capture_product_by_label_photo(
     user_id: UUID,
     file: UploadFile = File(...),
+    request_id: UUID | None = Form(None),
     current_profile: UserProfile = Depends(get_current_profile),
     service: NutritionWorkflowService = Depends(get_workflow_service),
 ) -> CaptureAnalysisResponse:
@@ -292,8 +303,14 @@ def capture_product_by_label_photo(
     except OSError as error:
         raise HTTPException(status_code=400, detail="Uploaded image is invalid or corrupted") from error
 
+    if request_id:
+        try:
+            return CaptureAnalysisResponse.model_validate(service.request_result(user_id, request_id), from_attributes=True)
+        except LookupError:
+            pass
     product = extract_product_from_label(image_data, file.content_type)
-    outcome = service.capture_label_product(user_id, product)
+    outcome = (service.capture_label_product(user_id, product, request_id=request_id)
+               if request_id else service.capture_label_product(user_id, product))
     return CaptureAnalysisResponse.model_validate(outcome, from_attributes=True)
 
 
