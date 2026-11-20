@@ -2,13 +2,15 @@ package com.uece.nutriia.ui.historico
 
 import android.view.LayoutInflater
 import android.view.ViewGroup
-import androidx.core.content.ContextCompat
 import androidx.recyclerview.widget.RecyclerView
 import com.uece.nutriia.R
 import com.uece.nutriia.data.model.Analise
 import com.uece.nutriia.databinding.ItemAnaliseBinding
+import com.uece.nutriia.ui.common.aplicarStatus
 
-class HistoricoAdapter : RecyclerView.Adapter<HistoricoAdapter.AnaliseViewHolder>() {
+class HistoricoAdapter(
+    private val aoClicar: (Analise) -> Unit = {}
+) : RecyclerView.Adapter<HistoricoAdapter.AnaliseViewHolder>() {
 
     private val itens = mutableListOf<Analise>()
 
@@ -24,7 +26,9 @@ class HistoricoAdapter : RecyclerView.Adapter<HistoricoAdapter.AnaliseViewHolder
     }
 
     override fun onBindViewHolder(holder: AnaliseViewHolder, position: Int) {
-        holder.bind(itens[position])
+        val analise = itens[position]
+        holder.bind(analise)
+        holder.itemView.setOnClickListener { aoClicar(analise) }
     }
 
     override fun getItemCount(): Int = itens.size
@@ -44,13 +48,7 @@ class HistoricoAdapter : RecyclerView.Adapter<HistoricoAdapter.AnaliseViewHolder
             binding.itemThumb.setBackgroundResource(
                 if (analise.thumbPeach) R.drawable.bg_thumb_peach else R.drawable.bg_thumb_mint
             )
-            if (analise.recomendado) {
-                binding.txtStatus.text = context.getString(R.string.recommended)
-                binding.txtStatus.setTextColor(ContextCompat.getColor(context, R.color.green_primary))
-            } else {
-                binding.txtStatus.text = context.getString(R.string.not_recommended)
-                binding.txtStatus.setTextColor(ContextCompat.getColor(context, R.color.danger))
-            }
+            binding.txtStatus.aplicarStatus(analise.status)
         }
     }
 }

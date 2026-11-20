@@ -1,44 +1,60 @@
-import os
+import base64
 
-from dotenv import load_dotenv
 from google import genai
 
-
-load_dotenv()
-
-MODEL_NAME = os.getenv("GEMINI_MODEL", "gemini-2.0-flash")
+from app.config.settings import Settings, get_settings
 
 
-def _build_client():
-    api_key = os.getenv("GEMINI_API_KEY")
+client = None
+
+
+def _build_client(settings: Settings | None = None):
+    settings = settings or get_settings()
+    api_key = settings.gemini_api_key
     if not api_key:
         return None
 
-    try:
-        return genai.Client(api_key=api_key)
-    except Exception:
-        return None
-
-
-client = _build_client()
+    return genai.Client(api_key=api_key)
 
 
 def generate_response(prompt: str) -> str:
-    if not prompt or not prompt.strip():
+    return _generate_interaction(prompt)
+
+
+def generate_image_response(prompt: str, image_data: bytes, mime_type: str) -> str:
+    if not image_data:
+        raise ValueError("Image must not be empty")
+    encoded_image = base64.b64encode(image_data).decode("ascii")
+    return _generate_interaction(
+        [
+            {"type": "text", "text": prompt},
+            {"type": "image", "data": encoded_image, "mime_type": mime_type},
+        ]
+    )
+
+
+def _generate_interaction(prompt: str | list[dict[str, str]]) -> str:
+    global client
+
+    if not prompt or (isinstance(prompt, str) and not prompt.strip()):
         raise ValueError("Prompt must not be empty")
+
+    settings = get_settings()
+    if client is None:
+        client = _build_client(settings)
 
     if client is None:
         raise RuntimeError("GEMINI_API_KEY is not configured")
 
     try:
-        response = client.models.generate_content(
-            model=MODEL_NAME,
-            contents=prompt,
+        response = client.interactions.create(
+            model=settings.gemini_model,
+            input=prompt,
         )
     except Exception as error:
         raise RuntimeError("Failed to communicate with Gemini") from error
 
-    response_text = getattr(response, "text", None)
+    response_text = getattr(response, "output_text", None)
     if not response_text:
         raise RuntimeError("Gemini returned an empty response")
 

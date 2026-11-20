@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>NutriIA – instalar o app</title>
+<style>
+  :root { --verde: #1B7A4C; --texto: #1C1C1C; --suave: #6B7280; --fundo: #F4F7F5; --card: #fff; --borda: #E4EAE6; }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--fundo); color: var(--texto); font: 18px/1.5 system-ui, "Segoe UI", Roboto, sans-serif; }
+  main { max-width: 1000px; margin: 0 auto; padding: 32px 20px; }
+  h1 { color: var(--verde); margin: 0 0 4px; font-size: 34px; }
+  p.sub { color: var(--suave); margin: 0 0 28px; }
+  .passos { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 20px; }
+  .passo { background: var(--card); border: 1px solid var(--borda); border-radius: 20px; padding: 24px; text-align: center; }
+  .num { display: inline-flex; width: 36px; height: 36px; border-radius: 50%; background: var(--verde); color: #fff; align-items: center; justify-content: center; font-weight: 700; }
+  h2 { font-size: 22px; margin: 10px 0 6px; }
+  .qr { display: inline-block; padding: 14px; background: #fff; border-radius: 12px; margin: 12px 0; }
+  .info { color: var(--suave); font-size: 15px; word-break: break-all; }
+  code { background: #E4F3EA; padding: 2px 8px; border-radius: 6px; }
+  .aviso { margin-top: 24px; color: var(--suave); font-size: 15px; }
+</style>
+</head>
+<body>
+<main>
+  <h1>NutriIA</h1>
+  <p class="sub">Teste o app no seu celular Android em dois passos.</p>
+
+  <div class="passos">
+    <section class="passo">
+      <span class="num">1</span>
+      <h2>Conecte no Wi-Fi do notebook</h2>
+      <div class="qr" id="qrWifi"></div>
+      <div class="info" id="wifiInfo"></div>
+    </section>
+
+    <section class="passo">
+      <span class="num">2</span>
+      <h2>Baixe e instale o app</h2>
+      <div class="qr" id="qrApk"></div>
+      <div class="info">ou abra no navegador do celular:<br><code id="apkUrl"></code></div>
+    </section>
+  </div>
+
+  <p class="aviso">Ao instalar, o Android pode pedir para permitir a instalação de apps desta fonte: é normal para apps fora da Play Store.
+  Depois é só criar uma conta no app e escanear um produto.</p>
+</main>
+
+<!-- config.js é gerado pelo iniciar.ps1 com o nome e a senha do hotspot deste notebook. -->
+<script src="config.js"></script>
+<script src="qrcode.min.js"></script>
+<script>
+  const APK_URL = "http://192.168.137.1:8080/NutriIA.apk";
+  const opcoes = { width: 260, height: 260, correctLevel: QRCode.CorrectLevel.M };
+
+  document.getElementById("apkUrl").textContent = APK_URL;
+  new QRCode(document.getElementById("qrApk"), Object.assign({ text: APK_URL }, opcoes));
+
+  const cfg = window.NUTRIIA_HOTSPOT || {};
+  const info = document.getElementById("wifiInfo");
+  if (cfg.ssid) {
+    // Formato padrão de QR de Wi-Fi: a câmera do celular conecta direto.
+    const escapar = (s) => s.replace(/([\\;,:"])/g, "\\$1");
+    const wifi = `WIFI:T:WPA;S:${escapar(cfg.ssid)};P:${escapar(cfg.senha || "")};;`;
+    new QRCode(document.getElementById("qrWifi"), Object.assign({ text: wifi }, opcoes));
+    info.innerHTML = `Rede: <code></code><br>Senha: <code></code>`;
+    const campos = info.querySelectorAll("code");
+    campos[0].textContent = cfg.ssid;
+    campos[1].textContent = cfg.senha || "(sem senha)";
+  } else {
+    document.getElementById("qrWifi").remove();
+    info.textContent = "Conecte o celular na rede do Hotspot móvel deste notebook (nome e senha em Configurações > Rede e Internet > Hotspot móvel).";
+  }
+</script>
+</body>
+</html>

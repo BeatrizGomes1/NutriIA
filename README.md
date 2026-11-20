@@ -5,81 +5,54 @@ orientações personalizadas com apoio de inteligência artificial.
 
 ## Estrutura do projeto
 
-Este repositório será organizado como um monorepo:
-
 ```text
 NutriIA/
-├── frontend/
-├── backend/
-├── prompts/
+├── frontend/      # Aplicativo Android
+├── backend/       # API e serviços de análise
+├── prompts/       # Histórico de prompts e decisões
+├── apresentacao/  # Kit para demonstração do aplicativo
 └── README.md
 ```
 
 ### Frontend
 
-Aplicação mobile Android, planejada com Kotlin e Jetpack Compose. Será
-responsável pela interface, captura de imagens, leitura de códigos de barras
-e interação com o usuário.
+Aplicativo Android em Kotlin, com telas em XML e ViewBinding. Permite cadastro,
+login, configuração do perfil, leitura de código de barras, captura de foto do
+rótulo e consulta ao histórico. Para instalação e configuração, consulte
+[frontend/README.md](frontend/README.md) e [COMO_RODAR.md](COMO_RODAR.md).
 
 ### Backend
 
-Backend em Python. O core de análise já possui modelos, configuração,
-serviços e integração preparada para o Gemini. A comunicação com o frontend
-será feita por uma API HTTP em FastAPI, que permanece em desenvolvimento
-separado.
+API HTTP em FastAPI com autenticação, perfis, captura de produtos por EAN ou
+foto de rótulo, análise nutricional e histórico. Os dados são persistidos em
+PostgreSQL por serviços Python com SQLAlchemy. A análise pode usar o provedor
+mock ou o Gemini; a leitura de rótulos por foto requer uma chave Gemini.
 
-O fluxo principal pode ser executado localmente sem iniciar o FastAPI:
-
-```text
-backend/
-├── app/
-│   ├── config/
-│   ├── api/
-│   ├── gemini/
-│   ├── models/
-│   ├── services/
-│   ├── utils/
-│   └── main.py
-├── tests/
-├── .env.example
-├── requirements.txt
-└── README.md
-```
+Consulte [backend/README.md](backend/README.md) para configuração, execução e
+detalhes dos serviços.
 
 ### Prompts
 
-A pasta `prompts/` registra prompts e decisões importantes do projeto. Toda
-implementação relevante ou decisão arquitetural deve criar uma nova versão
-nessa pasta antes da alteração.
-
-```text
-prompts/
-├── README.md
-├── INDEX.md
-└── vNNNN-nome-da-decisao/
-    ├── prompt.md
-    └── decision.md
-```
-
-Versões existentes não devem ser sobrescritas. O índice deve ser atualizado a
-cada nova versão.
+A pasta `prompts/` registra versões de prompts e decisões relevantes do
+projeto. Versões existentes são preservadas e o índice acompanha novas
+versões. Consulte [prompts/README.md](prompts/README.md) e
+[prompts/INDEX.md](prompts/INDEX.md).
 
 ## Objetivo
 
-O NutriIA deverá analisar informações de produtos alimentícios e considerar o
-perfil, as metas e as restrições alimentares de cada usuário para produzir
-orientações claras e personalizadas.
+Analisar informações de produtos alimentícios considerando o perfil, as metas
+e as restrições alimentares declaradas por cada usuário, oferecendo
+orientações informativas e personalizadas.
 
 ## Execução local
 
-Consulte [backend/README.md](backend/README.md) para instalar as dependências,
-executar o fluxo mockado e alternar para o Gemini real.
-
-O resultado da execução é salvo em
-`prompts/v0007-core-analysis-flow/result.json`.
+Siga o [guia COMO_RODAR.md](COMO_RODAR.md) para configurar o backend e executar
+o aplicativo Android.
 
 ## Status
 
-O core mockado da análise nutricional está funcional. A API FastAPI,
-persistência, autenticação, OCR, consulta por EAN e histórico ainda serão
-implementados em etapas posteriores.
+O repositório contém um aplicativo Android integrado à API FastAPI, com
+autenticação, persistência de perfis, capturas e análises, consulta por EAN,
+leitura de rótulo por foto e histórico. A análise nutricional oferece modo
+mock e integração com Gemini. Consulte os guias específicos para requisitos de
+ambiente e configuração de serviços externos.

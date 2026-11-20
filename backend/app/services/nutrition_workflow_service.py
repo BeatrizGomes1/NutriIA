@@ -8,7 +8,7 @@ from dataclasses import dataclass
 from datetime import datetime, timezone
 from uuid import UUID
 
-from sqlalchemy import select
+from sqlalchemy import func, select
 from sqlalchemy.dialects.postgresql import insert as pg_insert
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import selectinload
@@ -23,7 +23,7 @@ from app.db.models import (
     UserProfileRecord,
 )
 from app.db.session import get_session_factory
-from app.models.nutrition import AnalysisResult, Product
+from app.models.nutrition import AnalysisResult, Product, ProductSource
 from app.models.user import UserProfile
 from app.services.database_service import (
     analysis_to_domain,
@@ -156,6 +156,71 @@ class NutritionWorkflowService:
             record = session.get(ProductRecord, product_id)
             product = product_to_domain(record)
         return CaptureAnalysisOutcome(capture_id, SourceStatus.FOUND.value, product, analysis)
+
+    def capture_label_product(
+        self, user_id: str | UUID, product: Product
+    ) -> CaptureAnalysisOutcome:
+        uid = UUID(str(user_id))
+        product = product.model_copy(update={"source": ProductSource.LABEL, "ean": None})
+        source_status = (
+            SourceStatus.FOUND
+            if product.has_identity() and product.ingredient_text().strip()
+            else SourceStatus.INSUFFICIENT
+        )
+
+        with self.session_factory() as session:
+            if session.get(UserProfileRecord, uid) is None:
+                raise LookupError(f"User profile {uid} was not found")
+
+        values = product_values(product, fetched_at=datetime.now(timezone.utc))
+        values["ean"] = None
+        with self.session_factory() as session, session.begin():
+            record = None
+            if source_status == SourceStatus.FOUND and product.name:
+                conditions = [
+                    ProductRecord.ean.is_(None),
+                    func.lower(ProductRecord.name) == product.name.lower(),
+                    ProductRecord.ingredients_normalized == values["ingredients_normalized"],
+                ]
+                if product.brand:
+                    conditions.append(func.lower(ProductRecord.brand) == product.brand.lower())
+                else:
+                    conditions.append(ProductRecord.brand.is_(None))
+                record = session.scalar(
+                    select(ProductRecord)
+                    .where(*conditions)
+                    .order_by(ProductRecord.updated_at.desc())
+                    .limit(1)
+                    .with_for_update()
+                )
+
+            if record is None:
+                record = ProductRecord(**values)
+                session.add(record)
+                session.flush()
+            capture = ProductCaptureRecord(
+                user_id=uid,
+                product_id=record.id,
+                capture_type=CaptureType.LABEL_PHOTO,
+                source_status=source_status,
+            )
+            session.add(capture)
+            session.flush()
+            capture_id = str(capture.id)
+            product_id = record.id
+
+        analysis = self.analyze_product(uid, product_id)
+        with self.session_factory() as session:
+            saved_record = session.get(ProductRecord, product_id)
+            saved_product = product_to_domain(saved_record).model_copy(
+                update={"source": ProductSource.LABEL}
+            )
+        return CaptureAnalysisOutcome(
+            capture_id,
+            source_status.value,
+            saved_product,
+            analysis,
+        )
 
     def analyze_product(self, user_id: str | UUID, product_id: str | UUID) -> AnalysisResult:
         uid, pid = UUID(str(user_id)), UUID(str(product_id))

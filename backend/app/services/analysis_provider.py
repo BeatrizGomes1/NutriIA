@@ -11,6 +11,7 @@ from app.models.nutrition import (
     Conflict,
 )
 from app.utils.helpers import normalize_text
+from app.utils.ingredient_aliases import find_ingredient_alias
 
 
 class AnalysisProvider(Protocol):
@@ -78,14 +79,29 @@ class MockAnalysisProvider:
         conflicts = self._find_literal_conflicts(context)
         reasons: list[str] = []
 
-        if any(conflict.category in {"allergy", "restriction"} for conflict in conflicts):
+        blocking_conflicts = [
+            conflict
+            for conflict in conflicts
+            if conflict.category in {"allergy", "restriction"}
+            and not conflict.evidence.startswith("Relação indireta:")
+        ]
+        indirect_restriction_conflicts = [
+            conflict
+            for conflict in conflicts
+            if conflict.category == "restriction"
+            and conflict.evidence.startswith("Relação indireta:")
+        ]
+
+        if blocking_conflicts:
             status = AnalysisStatus.NOT_RECOMMENDED
             reasons.extend(
                 f"Foi identificado '{conflict.term}', relacionado à declaração "
                 f"'{conflict.profile_item}'."
-                for conflict in conflicts
-                if conflict.category in {"allergy", "restriction"}
+                for conflict in blocking_conflicts
             )
+        elif indirect_restriction_conflicts:
+            status = AnalysisStatus.ATTENTION
+            reasons.extend(conflict.evidence for conflict in indirect_restriction_conflicts)
         elif conflicts:
             status = AnalysisStatus.ATTENTION
             reasons.extend(
@@ -110,33 +126,40 @@ class MockAnalysisProvider:
 
     @staticmethod
     def _find_literal_conflicts(context: AnalysisContext) -> list[ProviderConflict]:
-        ingredient_values = [
-            value
-            for value in [*context.product.ingredients, context.product.ingredients_text]
-            if value and value.strip()
-        ]
+        ingredient_text = context.product.ingredient_text()
         conflicts: list[ProviderConflict] = []
 
         for category, profile_item in _declared_items(context.profile):
-            normalized_item = normalize_text(profile_item)
-            source_excerpt = next(
-                (
-                    ingredient
-                    for ingredient in ingredient_values
-                    if _contains_normalized_text(ingredient, normalized_item)
-                ),
-                None,
-            )
-            if source_excerpt is None:
+            match = find_ingredient_alias(profile_item, ingredient_text)
+            if match is None:
                 continue
+
+            if match.relation == "related":
+                explanation = (
+                    f"Relação indireta: '{match.matched_term}' é um carboidrato derivado do amido; "
+                    "pode ser relevante para quem evita açúcar, mas não é sinônimo químico de açúcar. "
+                    "O rótulo não permite inferir a quantidade de açúcares simples."
+                )
+            elif match.concept == "milk" and match.relation == "synonym":
+                explanation = (
+                    f"'{match.matched_term}' é um nome alternativo, derivado ou tradução de ingrediente lácteo "
+                    f"relacionado à declaração '{profile_item}'."
+                )
+            elif match.relation == "synonym":
+                explanation = (
+                    f"'{match.matched_term}' é um nome alternativo ou tradução relacionada à declaração "
+                    f"'{profile_item}'."
+                )
+            else:
+                explanation = f"Foi identificado o ingrediente declarado: '{match.source_excerpt}'."
 
             conflicts.append(
                 ProviderConflict(
-                    term=profile_item,
+                    term=match.source_excerpt,
                     category=category,
                     profile_item=profile_item,
-                    evidence=f"Foi identificado '{profile_item}', relacionado à declaração '{profile_item}'.",
-                    source_excerpt=source_excerpt,
+                    evidence=explanation,
+                    source_excerpt=match.source_excerpt,
                 )
             )
         return conflicts
