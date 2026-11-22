@@ -204,6 +204,22 @@
     <string name="analysis_pending">Resultado ainda não confirmado</string>
     <string name="analysis_failed">Tentativa não concluída</string>
     <string name="analysis_unlinked">Sem análise vinculada</string>
+
     <string name="rate_analysis">Avaliar análise</string>
+    <string name="rate_title">Avalie a análise</string>
+    <string name="rate_scanner_question">Como foi o scanner?</string>
+    <string name="rate_tap_to_rate">Toque para avaliar</string>
+    <string name="rate_recommend_question">Você recomenda este produto?</string>
+    <string name="rate_send">Enviar avaliação</string>
+    <string name="rate_not_now">Agora não</string>
+    <string name="rate_choose_stars">Escolha uma nota de 1 a 5 estrelas</string>
+    <string name="rate_thanks">Obrigado pela sua avaliação</string>
+    <string name="yes">Sim</string>
+    <string name="no">Não</string>
+    <string name="star_1">1 estrela</string>
+    <string name="star_2">2 estrelas</string>
+    <string name="star_3">3 estrelas</string>
+    <string name="star_4">4 estrelas</string>
+    <string name="star_5">5 estrelas</string>
 
 </resources>

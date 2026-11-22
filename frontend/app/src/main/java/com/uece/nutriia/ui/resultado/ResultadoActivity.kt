@@ -61,7 +61,10 @@ class ResultadoActivity : AppCompatActivity() {
         mostrarIngredientes(analise)
 
         binding.btnAvaliarAnalise.setOnClickListener {
-            Toast.makeText(this, "Avaliar análise", Toast.LENGTH_SHORT).show()
+            val marca = analise.produto?.marca?.takeIf { it.isNotBlank() }
+            AvaliacaoBottomSheet
+                .newInstance(analise.nome, marca)
+                .show(supportFragmentManager, "avaliacao")
         }
     }
 
