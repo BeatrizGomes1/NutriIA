@@ -9,6 +9,7 @@ import android.view.View
 import android.widget.TextView
 import android.widget.LinearLayout
 import android.graphics.Typeface
+import android.widget.Toast
 import androidx.activity.enableEdgeToEdge
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.ContextCompat
@@ -58,6 +59,10 @@ class ResultadoActivity : AppCompatActivity() {
         mostrarMotivos()
         mostrarTabelaNutricional()
         mostrarIngredientes(analise)
+
+        binding.btnAvaliarAnalise.setOnClickListener {
+            Toast.makeText(this, "Avaliar análise", Toast.LENGTH_SHORT).show()
+        }
     }
 
     private fun mostrarCabecalho(analise: Analise) {
