@@ -169,7 +169,7 @@ class ResultadoActivity : AppCompatActivity() {
         binding.tabelaNutricional.addView(TextView(this).apply {
             text = getString(R.string.nutrition_table_reference, tabela.referencia)
             setTextColor(ContextCompat.getColor(context, R.color.text_primary))
-            textSize = 16f
+            textSize = 15f
             setTypeface(null, Typeface.BOLD)
             setPadding(0, 0, 0, 12)
         })
