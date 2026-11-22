@@ -204,4 +204,6 @@
     <string name="analysis_pending">Resultado ainda não confirmado</string>
     <string name="analysis_failed">Tentativa não concluída</string>
     <string name="analysis_unlinked">Sem análise vinculada</string>
+    <string name="rate_analysis">Avaliar análise</string>
+
 </resources>
