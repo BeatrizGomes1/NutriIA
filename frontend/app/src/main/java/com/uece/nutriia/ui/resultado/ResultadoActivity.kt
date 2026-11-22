@@ -9,6 +9,7 @@ import android.view.View
 import android.widget.TextView
 import android.widget.LinearLayout
 import android.graphics.Typeface
+import android.widget.Toast
 import androidx.activity.enableEdgeToEdge
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.ContextCompat
@@ -58,6 +59,13 @@ class ResultadoActivity : AppCompatActivity() {
         mostrarMotivos()
         mostrarTabelaNutricional()
         mostrarIngredientes(analise)
+
+        binding.btnAvaliarAnalise.setOnClickListener {
+            val marca = analise.produto?.marca?.takeIf { it.isNotBlank() }
+            AvaliacaoBottomSheet
+                .newInstance(analise.nome, marca)
+                .show(supportFragmentManager, "avaliacao")
+        }
     }
 
     private fun mostrarCabecalho(analise: Analise) {
@@ -161,7 +169,7 @@ class ResultadoActivity : AppCompatActivity() {
         binding.tabelaNutricional.addView(TextView(this).apply {
             text = getString(R.string.nutrition_table_reference, tabela.referencia)
             setTextColor(ContextCompat.getColor(context, R.color.text_primary))
-            textSize = 16f
+            textSize = 15f
             setTypeface(null, Typeface.BOLD)
             setPadding(0, 0, 0, 12)
         })

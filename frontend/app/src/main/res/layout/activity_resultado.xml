@@ -202,18 +202,24 @@
             <!-- Informacoes nutricionais adicionais -->
             <TextView
                 android:id="@+id/tituloInformacoesNutricionais"
-                android:layout_width="match_parent"
+                android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
+                android:layout_gravity="center_horizontal"
                 android:layout_marginTop="22dp"
-                android:fontFamily="sans-serif-medium"
-                android:text="@string/show_analysis_details"
-                android:minHeight="48dp"
-                android:gravity="center_vertical"
+                android:background="@drawable/bg_pill_detalhes"
                 android:clickable="true"
+                android:drawableEnd="@drawable/ic_chevron_toggle"
+                android:drawablePadding="6dp"
+                android:drawableTint="@color/green_primary"
                 android:focusable="true"
-                android:textColor="@color/green_primary"
-                android:textSize="14sp"
-                android:textStyle="bold" />
+                android:fontFamily="sans-serif-medium"
+                android:gravity="center_vertical"
+                android:minHeight="44dp"
+                android:paddingStart="16dp"
+                android:paddingEnd="12dp"
+                android:text="@string/show_analysis_details"
+                android:textColor="@color/text_primary"
+                android:textSize="13sp" />
 
             <LinearLayout
                 android:id="@+id/listaInformacoesNutricionais"
@@ -221,6 +227,21 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:orientation="vertical" />
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btnAvaliarAnalise"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="22dp"
+                android:minHeight="48dp"
+                android:fontFamily="sans-serif-medium"
+                android:text="@string/rate_analysis"
+                android:textColor="@android:color/white"
+                android:textSize="14sp"
+                android:textStyle="bold"
+                android:textAllCaps="false"
+                app:backgroundTint="@color/green_primary"
+                app:cornerRadius="10dp" />
 
             <TextView
                 android:id="@+id/txtAviso"

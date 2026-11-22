@@ -78,4 +78,13 @@
         <item name="android:fontFamily">sans-serif-medium</item>
         <item name="android:textSize">15sp</item>
     </style>
+
+    <style name="ThemeOverlay.NutriIA.BottomSheet" parent="ThemeOverlay.Material3.BottomSheetDialog">
+        <item name="bottomSheetStyle">@style/BottomSheetTransparente</item>
+    </style>
+
+    <style name="BottomSheetTransparente" parent="Widget.Material3.BottomSheet.Modal">
+        <item name="android:background">@android:color/transparent</item>
+    </style>
+
 </resources>
