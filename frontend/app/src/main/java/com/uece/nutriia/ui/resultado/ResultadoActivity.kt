@@ -6,6 +6,9 @@ import android.content.res.ColorStateList
 import android.graphics.drawable.GradientDrawable
 import android.os.Bundle
 import android.view.View
+import android.widget.TextView
+import android.widget.LinearLayout
+import android.graphics.Typeface
 import androidx.activity.enableEdgeToEdge
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.ContextCompat
@@ -32,6 +35,7 @@ class ResultadoActivity : AppCompatActivity() {
 
     private lateinit var binding: ActivityResultadoBinding
     private var ingredientesExpandidos = false
+    private lateinit var apresentacao: ResultadoPresentation
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -48,9 +52,11 @@ class ResultadoActivity : AppCompatActivity() {
         ScreenInsets.apply(binding.root, binding.bottomNav.root)
         BottomNavigationBinder.bind(this, binding.bottomNav, BottomTab.NENHUMA)
 
+        apresentacao = ApresentadorResultado.apresentar(analise)
         mostrarCabecalho(analise)
         mostrarStatus(analise)
-        mostrarMotivos(analise)
+        mostrarMotivos()
+        mostrarTabelaNutricional()
         mostrarIngredientes(analise)
     }
 
@@ -66,10 +72,12 @@ class ResultadoActivity : AppCompatActivity() {
 
     private fun mostrarStatus(analise: Analise) {
         binding.txtStatus.aplicarStatus(analise.status)
-        binding.txtResumo.text = when (analise.status) {
-            StatusAnalise.NAO_ENCONTRADO -> getString(R.string.not_found_summary)
-            else -> analise.analise?.summary.orEmpty()
+        if (analise.analise == null) when (analise.processamento) {
+            "pending" -> binding.txtStatus.setText(R.string.analysis_pending)
+            "failed" -> binding.txtStatus.setText(R.string.analysis_failed)
+            "unlinked" -> binding.txtStatus.setText(R.string.analysis_unlinked)
         }
+        binding.txtResumo.text = apresentacao.resumo
 
         val (fundo, cor, icone) = when (analise.status) {
             StatusAnalise.RECOMENDADO -> Triple(R.color.green_soft, R.color.green_primary, R.drawable.ic_check_circle)
@@ -90,40 +98,86 @@ class ResultadoActivity : AppCompatActivity() {
             ImageViewCompat.setImageTintList(binding.icoStatus, ColorStateList.valueOf(tint))
         }
 
-        val mostrarDica = analise.status == StatusAnalise.NAO_RECOMENDADO || analise.status == StatusAnalise.ATENCAO
-        binding.txtDica.visibility = if (mostrarDica) View.VISIBLE else View.GONE
-        binding.txtDica.setTextColor(corInt)
+        binding.txtDica.visibility = View.GONE
     }
 
-    private fun mostrarMotivos(analise: Analise) {
+    private fun mostrarMotivos() {
         binding.listaMotivos.removeAllViews()
-        val conflitos = analise.analise?.conflicts.orEmpty()
-        val razoes = analise.analise?.reasons.orEmpty()
-
-        // Conflitos têm termo e explicação; sem eles, mostra as razões gerais.
-        if (conflitos.isNotEmpty()) {
-            conflitos.forEach { conflito ->
-                adicionarMotivo(
-                    getString(R.string.contains_term, conflito.trechoOrigem?.takeIf { it.isNotBlank() } ?: conflito.term),
-                    conflito.evidence,
-                    alerta = true
-                )
-            }
-        } else {
-            razoes.forEach { razao -> adicionarMotivo(razao, null, alerta = false) }
+        binding.listaInformacoesNutricionais.removeAllViews()
+        apresentacao.alertas.forEach { alerta ->
+            adicionarMotivo(alerta.titulo, alerta.descricao, true, alerta.originais)
         }
-
+        apresentacao.motivosVisiveis.forEach { adicionarMotivo(it, null, false) }
+        if (apresentacao.detalhes.isNotEmpty()) adicionarMotivo(apresentacao.detalhes.joinToString("\n\n"), null, false, nutricional = true)
         binding.tituloMotivos.visibility = if (binding.listaMotivos.isEmpty()) View.GONE else View.VISIBLE
+        binding.tituloInformacoesNutricionais.visibility =
+            if (binding.listaInformacoesNutricionais.isEmpty()) View.GONE else View.VISIBLE
+        binding.listaInformacoesNutricionais.visibility = View.GONE
+        var detalhesExpandidos = false
+        binding.tituloInformacoesNutricionais.setText(R.string.show_analysis_details)
+        binding.tituloInformacoesNutricionais.setOnClickListener {
+            detalhesExpandidos = !detalhesExpandidos
+            binding.listaInformacoesNutricionais.visibility = if (detalhesExpandidos) View.VISIBLE else View.GONE
+            binding.tituloInformacoesNutricionais.setText(
+                if (detalhesExpandidos) R.string.hide_analysis_details else R.string.show_analysis_details)
+            binding.tituloInformacoesNutricionais.isSelected = detalhesExpandidos
+        }
     }
 
-    private fun adicionarMotivo(titulo: String, descricao: String?, alerta: Boolean) {
-        val item = ItemMotivoBinding.inflate(layoutInflater, binding.listaMotivos, true)
+    private fun adicionarMotivo(
+        titulo: String, descricao: String?, alerta: Boolean,
+        originais: List<String> = emptyList(), nutricional: Boolean = false
+    ) {
+        val container = if (nutricional) binding.listaInformacoesNutricionais else binding.listaMotivos
+        val item = ItemMotivoBinding.inflate(layoutInflater, container, true)
         item.titulo.text = titulo
         item.descricao.text = descricao
         item.descricao.visibility = if (descricao.isNullOrBlank()) View.GONE else View.VISIBLE
         if (!alerta) {
             item.icone.setImageResource(R.drawable.ic_info)
             item.titulo.textSize = 14f
+        }
+        if (originais.isNotEmpty()) {
+            item.btnVerOriginais.visibility = View.VISIBLE
+            var expandido = false
+            item.btnVerOriginais.setOnClickListener {
+                expandido = !expandido
+                item.descricao.text = if (expandido) listOfNotNull(descricao,
+                    originais.joinToString("\n") { "\u2022 $it" }).joinToString("\n\n") else descricao
+                item.descricao.visibility = View.VISIBLE
+                item.btnVerOriginais.setText(if (expandido) R.string.hide_label_details else R.string.show_label_details)
+                item.btnVerOriginais.isSelected = expandido
+            }
+        }
+    }
+
+    private fun mostrarTabelaNutricional() {
+        binding.tabelaNutricional.removeAllViews()
+        val tabela = apresentacao.tabela ?: run {
+            binding.tabelaNutricional.visibility = View.GONE
+            return
+        }
+        binding.tabelaNutricional.visibility = View.VISIBLE
+        binding.tabelaNutricional.addView(TextView(this).apply {
+            text = getString(R.string.nutrition_table_reference, tabela.referencia)
+            setTextColor(ContextCompat.getColor(context, R.color.text_primary))
+            textSize = 16f
+            setTypeface(null, Typeface.BOLD)
+            setPadding(0, 0, 0, 12)
+        })
+        tabela.linhas.forEach { (nome, valor) ->
+            binding.tabelaNutricional.addView(LinearLayout(this).apply {
+                orientation = LinearLayout.HORIZONTAL
+                setPadding(0, 4, 0, 4)
+                addView(TextView(context).apply {
+                    text = nome
+                    setTextColor(ContextCompat.getColor(context, R.color.text_primary))
+                }, LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f))
+                addView(TextView(context).apply {
+                    text = valor
+                    setTextColor(ContextCompat.getColor(context, R.color.text_primary))
+                })
+            })
         }
     }
 
@@ -245,7 +299,9 @@ class ResultadoActivity : AppCompatActivity() {
                 status = status,
                 ean = resposta.product?.ean ?: ean,
                 produto = resposta.product,
-                analise = resposta.analysis
+                analise = resposta.analysis,
+                origemAnalise = resposta.origemAnalise,
+                processamento = resposta.processamento
             )
         }
     }

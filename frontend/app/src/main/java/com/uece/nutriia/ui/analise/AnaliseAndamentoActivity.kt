@@ -24,6 +24,7 @@ import kotlinx.coroutines.async
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import java.io.File
+import java.util.UUID
 
 /**
  * Envia o EAN (POST /profiles/{id}/captures/ean) ou a foto do rótulo
@@ -36,6 +37,7 @@ class AnaliseAndamentoActivity : AppCompatActivity() {
     private lateinit var binding: ActivityAnaliseAndamentoBinding
     private val repository = AnaliseRepository()
     private var resultado: Analise? = null
+    private var resultadoAberto = false
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -58,13 +60,16 @@ class AnaliseAndamentoActivity : AppCompatActivity() {
 
         val ean = intent.getStringExtra(EXTRA_EAN)
         val foto = intent.getStringExtra(EXTRA_FOTO)?.let(::File)
+        val tentativaId = savedInstanceState?.getString("tentativa_id")
+            ?: intent.getStringExtra("tentativa_id") ?: UUID.randomUUID().toString()
+        intent.putExtra("tentativa_id", tentativaId)
         lifecycleScope.launch {
             val chamada = async {
                 if (foto != null) {
                     // A foto temporária não é mais necessária depois do envio.
-                    repository.analisarFotoRotulo(foto).also { foto.delete() }
+                    repository.analisarFotoRotulo(foto, tentativaId).also { foto.delete() }
                 } else {
-                    repository.analisarEan(ean.orEmpty())
+                    repository.analisarEan(ean.orEmpty(), tentativaId)
                 }
             }
 
@@ -79,6 +84,7 @@ class AnaliseAndamentoActivity : AppCompatActivity() {
                 is ApiResult.Sucesso -> {
                     etapas.zip(textos).forEach { (etapa, texto) -> marcarEtapa(etapa, texto, concluida = true) }
                     resultado = ResultadoActivity.paraAnalise(this@AnaliseAndamentoActivity, resposta.dados, ean)
+                    if (resposta.dados.processamento == "pending") return@launch
                     binding.btnVerResultado.visibility = View.VISIBLE
                     delay(TEMPO_ETAPA_MS)
                     abrirResultado()
@@ -93,9 +99,15 @@ class AnaliseAndamentoActivity : AppCompatActivity() {
 
     private fun abrirResultado() {
         val analise = resultado ?: return
-        if (isFinishing) return
+        if (isFinishing || resultadoAberto) return
+        resultadoAberto = true
         ResultadoActivity.abrir(this, analise)
         finish()
+    }
+
+    override fun onSaveInstanceState(outState: Bundle) {
+        outState.putString("tentativa_id", intent.getStringExtra("tentativa_id"))
+        super.onSaveInstanceState(outState)
     }
 
     private fun marcarEtapa(etapa: ItemEtapaAnaliseBinding, texto: Int, concluida: Boolean) {

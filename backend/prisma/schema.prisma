@@ -77,6 +77,11 @@ model UserProfile {
 }
 
 model ProductCapture {
+  request_id        String?      @unique @db.Uuid
+  analysis_id       String?      @db.Uuid
+  analysis_origin   String?      @db.VarChar(16)
+  processing_status String?      @db.VarChar(16)
+  analysis          AnalysisResult? @relation(fields: [analysis_id], references: [id], onDelete: SetNull, onUpdate: NoAction)
   id               String       @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   user_id          String       @db.Uuid
   product_id       String?      @db.Uuid
@@ -116,6 +121,7 @@ model Product {
 }
 
 model AnalysisResult {
+  captures            ProductCapture[]
   id                  String             @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   user_id             String             @db.Uuid
   product_id          String             @db.Uuid

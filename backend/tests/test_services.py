@@ -19,7 +19,7 @@ def test_generate_response_uses_model_and_content(monkeypatch):
         output_text = "Resposta simulada"
 
     class FakeInteractions:
-        def create(self, *, model, input):
+        def create(self, *, model, input, timeout):
             assert model == "gemini-3.6-flash"
             assert input == "prompt de teste"
             return FakeResponse()
@@ -59,7 +59,7 @@ def test_generate_response_rejects_empty_response(monkeypatch):
         output_text = ""
 
     class FakeInteractions:
-        def create(self, *, model, input):
+        def create(self, *, model, input, timeout):
             return FakeResponse()
 
     class FakeClient:
@@ -83,7 +83,7 @@ def test_generate_image_response_builds_interactions_image_input(monkeypatch):
         output_text = "JSON do rótulo"
 
     class FakeInteractions:
-        def create(self, *, model, input):
+        def create(self, *, model, input, timeout):
             captured["model"] = model
             captured["input"] = input
             return FakeResponse()
@@ -112,7 +112,7 @@ def test_generate_image_response_builds_interactions_image_input(monkeypatch):
 
 def test_generate_response_wraps_interactions_api_errors(monkeypatch):
     class FakeInteractions:
-        def create(self, *, model, input):
+        def create(self, *, model, input, timeout):
             raise OSError("network unavailable")
 
     class FakeClient:

@@ -8,7 +8,8 @@ import kotlin.coroutines.cancellation.CancellationException
 /** Resultado de uma chamada ao backend, já com mensagem pronta para a tela. */
 sealed class ApiResult<out T> {
     data class Sucesso<T>(val dados: T) : ApiResult<T>()
-    data class Erro(val mensagem: String, val codigo: Int? = null) : ApiResult<Nothing>() {
+    data class Erro(val mensagem: String, val codigo: Int? = null,
+                    val resultadoNaoConfirmado: Boolean = false) : ApiResult<Nothing>() {
         /** Token ausente, inválido ou expirado: o usuário precisa entrar de novo. */
         val sessaoExpirada: Boolean get() = codigo == 401
     }
@@ -27,7 +28,7 @@ suspend fun <T> chamarApi(
     } catch (e: CancellationException) {
         throw e
     } catch (e: IOException) {
-        return ApiResult.Erro(ERRO_CONEXAO)
+        return ApiResult.Erro(ERRO_CONEXAO, resultadoNaoConfirmado = true)
     } catch (e: RuntimeException) {
         // Ex.: JSON inesperado na resposta.
         return ApiResult.Erro(ERRO_GENERICO)

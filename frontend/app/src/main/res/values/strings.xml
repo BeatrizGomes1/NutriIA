@@ -195,4 +195,13 @@
     <string name="not_found_summary">Não encontramos este código de barras na base de produtos. Confira o número ou tente outro produto.</string>
     <string name="result_disclaimer">A IA interpreta dados extraídos e não cria valores numéricos que não estejam na fonte.</string>
     <string name="product_fallback_name">Produto %1$s</string>
+    <string name="additional_nutrition_information">Informações nutricionais adicionais</string>
+    <string name="show_label_details">Ver detalhes do alerta</string>
+    <string name="hide_label_details">Ocultar detalhes do alerta</string>
+    <string name="show_analysis_details">Ver detalhes da análise</string>
+    <string name="hide_analysis_details">Ocultar detalhes da análise</string>
+    <string name="nutrition_table_reference">Informações nutricionais · %1$s</string>
+    <string name="analysis_pending">Resultado ainda não confirmado</string>
+    <string name="analysis_failed">Tentativa não concluída</string>
+    <string name="analysis_unlinked">Sem análise vinculada</string>
 </resources>

@@ -10,6 +10,11 @@ from app.models.nutrition import (
     AnalysisStatus,
     Conflict,
 )
+from app.services.goal_assessment import assess_goal
+from app.services.food_safety import NO_GUARANTEE, deterministic_result
+from app.services.nutrition_observations import (
+    append_nutrition, has_nutritional_context, observation_catalog, verified_explanations,
+)
 from app.utils.helpers import normalize_text
 from app.utils.ingredient_aliases import find_ingredient_alias
 
@@ -49,6 +54,7 @@ class ProviderAnalysisResult(BaseModel):
     reasons: list[str] = Field(default_factory=list)
     conflicts: list[ProviderConflict] = Field(default_factory=list)
     evidence: list[str] = Field(default_factory=list)
+    nutrition_observation_ids: list[str] = Field(default_factory=list)
 
 
 class GeminiAnalysisProvider:
@@ -59,7 +65,9 @@ class GeminiAnalysisProvider:
     def __call__(self, context: AnalysisContext) -> str:
         from app.gemini.nutrition_ai import generate_product_analysis
 
-        return generate_product_analysis(context.to_provider_payload())
+        payload = context.to_provider_payload()
+        payload["nutrition_observations"] = list(observation_catalog(context).values())
+        return generate_product_analysis(payload)
 
 
 SUMMARY_BY_STATUS = {
@@ -189,6 +197,10 @@ def parse_provider_result(
 ) -> AnalysisResult:
     """Valida, fundamenta e converte a resposta do provedor para o resultado público."""
 
+    guarded = deterministic_result(context)
+    if guarded is not None:
+        return append_nutrition(guarded, context)
+
     if isinstance(response, ProviderAnalysisResult):
         result = response
     elif isinstance(response, Mapping):
@@ -201,31 +213,43 @@ def parse_provider_result(
     else:
         raise TypeError("Analysis provider returned an unsupported response")
 
-    if not _is_grounded(result, context):
-        return AnalysisResult(
-            status=AnalysisStatus.INSUFFICIENT_INFORMATION,
-            product_name=context.product.name or context.product.ean,
-            summary=SUMMARY_BY_STATUS[AnalysisStatus.INSUFFICIENT_INFORMATION],
-            reasons=["Não foi possível confirmar as evidências da análise nos dados recebidos."],
-            provider=provider_name,
-        )
+    grounded = _is_grounded(result, context)
+    reasons, evidence = verified_explanations(
+        context, result.nutrition_observation_ids, [result.summary, *result.reasons])
+    meaningful = has_nutritional_context(context)
+    unverified_safety = any(c.category in {"allergy", "restriction"} for c in result.conflicts)
+    inconsistent_nutrition = assess_goal(context.product.nutrition, str(context.profile.get("goal") or "")).state == "inconsistent"
+    if inconsistent_nutrition or unverified_safety or ((not grounded or result.status in {
+            AnalysisStatus.INSUFFICIENT_INFORMATION, AnalysisStatus.NOT_RECOMMENDED}) and not meaningful):
+        status = AnalysisStatus.INSUFFICIENT_INFORMATION
+    elif not grounded:
+        status = AnalysisStatus.ATTENTION
+    elif result.status in {AnalysisStatus.INSUFFICIENT_INFORMATION, AnalysisStatus.NOT_RECOMMENDED}:
+        # Uncertainty or an unsupported AI verdict must not erase verifiable
+        # qualitative nutrition. Safety guards already took precedence above.
+        status = AnalysisStatus.ATTENTION
+    elif (context.profile.get("allergies") or context.profile.get("restrictions")
+          or str(context.profile.get("goal") or "") in {"muscle_gain", "weight_loss"}):
+        # Composition benchmarks do not establish a consumption recommendation
+        # or suitability of the entire diet, even without declared allergies.
+        status = AnalysisStatus.ATTENTION
+    else:
+        status = result.status
 
+    if unverified_safety:
+        reasons.insert(0, "Uma conclus\u00e3o de seguran\u00e7a do provedor n\u00e3o p\u00f4de ser confirmada; "
+                          "as observa\u00e7\u00f5es nutricionais n\u00e3o garantem seguran\u00e7a alimentar.")
+
+    # Nutrition-related preferences are explanations, not forbidden ingredients.
+    # Only deterministic safety evaluation creates public safety conflicts.
     return AnalysisResult(
-        status=result.status,
-        product_name=result.product_name or context.product.name or context.product.ean,
-        summary=result.summary,
-        reasons=result.reasons,
-        conflicts=[
-            Conflict(
-                term=conflict.term,
-                category=conflict.category,
-                profile_item=conflict.profile_item,
-                evidence=conflict.evidence,
-                source_excerpt=conflict.source_excerpt,
-            )
-            for conflict in result.conflicts
-        ],
-        evidence=result.evidence,
+        status=status,
+        product_name=context.product.name or context.product.ean,
+        summary=(" ".join(reasons[:2]) if meaningful and reasons
+                 else SUMMARY_BY_STATUS[status]),
+        reasons=list(dict.fromkeys([*reasons, NO_GUARANTEE])),
+        conflicts=[],
+        evidence=evidence,
         provider=provider_name,
     )
 
@@ -266,6 +290,11 @@ def _is_grounded(result: ProviderAnalysisResult, context: AnalysisContext) -> bo
     )
 
     for conflict in result.conflicts:
+        # Safety conflicts require deterministic semantic support, not just a
+        # substring copied by the model. Supported conflicts already returned
+        # through deterministic_result above.
+        if conflict.category in {"allergy", "restriction"}:
+            return False
         if (conflict.category, normalize_text(conflict.profile_item)) not in profile_items:
             return False
         if not _contains_normalized_text(ingredients, conflict.source_excerpt):

@@ -11,3 +11,19 @@ dist/
 .idea/
 .vscode/
 *.egg-info/
+
+# Variáveis de ambiente e credenciais
+.env
+.env.*
+!.env.example
+
+# Arquivos sensíveis
+*.pem
+*.key
+
+# Local compiler caches and signing material
+.kotlin/
+*.jks
+*.keystore
+*.p12
+*.pfx

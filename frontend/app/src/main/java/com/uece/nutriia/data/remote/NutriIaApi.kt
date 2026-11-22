@@ -11,6 +11,7 @@ import com.uece.nutriia.data.model.RecuperarSenhaRequest
 import com.uece.nutriia.data.model.RedefinirSenhaRequest
 import com.uece.nutriia.data.model.TokenResponse
 import okhttp3.MultipartBody
+import okhttp3.RequestBody
 import retrofit2.Response
 import retrofit2.http.Body
 import retrofit2.http.GET
@@ -56,7 +57,8 @@ interface NutriIaApi {
     @POST("profiles/{userId}/captures/label-photo")
     suspend fun capturarFotoRotulo(
         @Path("userId") userId: String,
-        @Part file: MultipartBody.Part
+        @Part file: MultipartBody.Part,
+        @Part("request_id") tentativaId: RequestBody? = null
     ): Response<CapturaResponse>
 
     @GET("profiles/{userId}/history/captures")
@@ -65,4 +67,10 @@ interface NutriIaApi {
         @Query("limit") limite: Int = 50,
         @Query("offset") offset: Int = 0
     ): Response<List<CapturaHistoricoResponse>>
+
+    @GET("profiles/{userId}/captures/requests/{requestId}")
+    suspend fun resultadoTentativa(
+        @Path("userId") userId: String,
+        @Path("requestId") tentativaId: String
+    ): Response<CapturaResponse>
 }

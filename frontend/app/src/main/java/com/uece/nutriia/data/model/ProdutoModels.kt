@@ -4,7 +4,8 @@ import com.google.gson.annotations.SerializedName
 import java.io.Serializable
 
 data class EanCaptureRequest(
-    val ean: String
+    val ean: String,
+    @SerializedName("request_id") val tentativaId: String? = null
 )
 
 data class InformacaoNutricionalDto(
@@ -12,7 +13,11 @@ data class InformacaoNutricionalDto(
     @SerializedName("sugars_g") val acucares: Double?,
     @SerializedName("carbohydrates_g") val carboidratos: Double?,
     @SerializedName("protein_g") val proteinas: Double?,
-    @SerializedName("sodium_mg") val sodio: Double?
+    @SerializedName("sodium_mg") val sodio: Double?,
+    @SerializedName("fiber_g") val fibras: Double? = null,
+    val basis: String? = null,
+    @SerializedName("serving_quantity") val porcao: Double? = null,
+    @SerializedName("serving_unit") val unidadePorcao: String? = null
 ) : Serializable
 
 data class ProdutoDto(
@@ -50,7 +55,10 @@ data class CapturaResponse(
     @SerializedName("capture_id") val capturaId: String,
     @SerializedName("source_status") val statusOrigem: String,
     val product: ProdutoDto?,
-    val analysis: AnaliseDto?
+    val analysis: AnaliseDto?,
+    @SerializedName("request_id") val tentativaId: String? = null,
+    @SerializedName("analysis_origin") val origemAnalise: String? = null,
+    @SerializedName("processing_status") val processamento: String? = null
 )
 
 /** Item de GET /profiles/{id}/history/captures. */
@@ -60,7 +68,10 @@ data class CapturaHistoricoResponse(
     val ean: String?,
     @SerializedName("source_status") val statusOrigem: String,
     val product: ProdutoDto?,
-    val analysis: AnaliseDto?
+    val analysis: AnaliseDto?,
+    @SerializedName("request_id") val tentativaId: String? = null,
+    @SerializedName("analysis_origin") val origemAnalise: String? = null,
+    @SerializedName("processing_status") val processamento: String? = null
 )
 
 /** Valores de `source_status` devolvidos pelo backend. */

@@ -1,0 +1,2 @@
+# Applied Prisma migrations must keep stable bytes across platforms.
+backend/prisma/migrations/** text eol=lf

@@ -31,6 +31,10 @@ def api_client():
             jwt_secret_key="test-only-secret-key-with-at-least-32-chars",
         )
     )
+    # These tests replace services per scenario. Default sentinels prevent
+    # validation/ownership tests from constructing real database dependencies.
+    application.dependency_overrides[get_auth_service] = lambda: object()
+    application.dependency_overrides[get_profile_service] = lambda: object()
     with TestClient(application) as client:
         yield client
     application.dependency_overrides.clear()
@@ -154,6 +158,9 @@ def test_ean_capture_route_returns_capture_and_analysis_fields(api_client):
         "source_status": "not_found",
         "product": None,
         "analysis": None,
+        "request_id": None,
+        "analysis_origin": None,
+        "processing_status": "completed",
     }
 
 
@@ -193,6 +200,44 @@ def test_label_photo_route_extracts_and_records_label(api_client, monkeypatch):
 
     assert response.status_code == 200
     assert response.json()["source_status"] == "found"
+    assert response.json()["product"]["source"] == "label"
+
+
+def test_attempt_lookup_is_owned_and_does_not_fill_missing_analysis(api_client):
+    user_id, request_id = uuid4(), uuid4()
+    class Workflow:
+        def request_result(self, user, request):
+            assert (user, request) == (user_id, request_id)
+            return CaptureAnalysisOutcome(str(uuid4()), "found", Product(name="Ninho"), None,
+                str(request_id), None, "pending")
+    api_client.app.dependency_overrides[get_workflow_service] = lambda: Workflow()
+    api_client.app.dependency_overrides[get_current_profile] = lambda: UserProfile(id=str(user_id))
+    response = api_client.get(f"/api/v1/profiles/{user_id}/captures/requests/{request_id}")
+    assert response.status_code == 200
+    assert response.json()["request_id"] == str(request_id)
+    assert response.json()["processing_status"] == "pending"
+    assert response.json()["analysis"] is None
+    # Existing owner isolation deliberately uses 404 to avoid resource enumeration.
+    assert api_client.get(f"/api/v1/profiles/{uuid4()}/captures/requests/{request_id}").status_code == 404
+
+
+def test_label_photo_forwards_attempt_identifier(api_client, monkeypatch):
+    from app.api import routes
+    user_id, request_id = uuid4(), uuid4()
+    class Workflow:
+        def request_result(self, *args): raise LookupError("Not yet created")
+        def capture_label_product(self, user, product, *, request_id):
+            return CaptureAnalysisOutcome(str(uuid4()), "found", product, None, str(request_id))
+    monkeypatch.setattr(routes, "extract_product_from_label", lambda *args:
+        Product(name="Photo", source=ProductSource.LABEL, ingredients_text="water"))
+    api_client.app.dependency_overrides[get_workflow_service] = lambda: Workflow()
+    api_client.app.dependency_overrides[get_current_profile] = lambda: UserProfile(id=str(user_id))
+    image = BytesIO()
+    Image.new("RGB", (1, 1)).save(image, format="PNG")
+    response = api_client.post(f"/api/v1/profiles/{user_id}/captures/label-photo",
+        data={"request_id": str(request_id)}, files={"file": ("label.png", image.getvalue(), "image/png")})
+    assert response.status_code == 200
+    assert response.json()["request_id"] == str(request_id)
     assert response.json()["product"]["source"] == "label"
 
 
@@ -255,3 +300,45 @@ def test_profile_payload_maps_api_names_to_domain_names():
     assert profile.allergies == ["leite"]
     assert profile.restrictions == ["açúcar"]
     assert profile.preferences == ["vegetariano"]
+
+
+@pytest.mark.parametrize("basis", ["per_100g", "per_100ml", "per_serving", "unknown"])
+def test_capture_response_keeps_android_fields_and_adds_nutrition_basis(api_client, basis):
+    user_id = uuid4()
+    class Workflow:
+        def capture_ean(self, *_):
+            return CaptureAnalysisOutcome(str(uuid4()), "found",
+                Product(name="Product", nutrition={"basis": basis, "protein_g": 2}), None)
+    api_client.app.dependency_overrides[get_workflow_service] = lambda: Workflow()
+    api_client.app.dependency_overrides[get_current_profile] = lambda: UserProfile(id=str(user_id))
+    response = api_client.post(f"/api/v1/profiles/{user_id}/captures/ean", json={"ean": "12345678"})
+    assert response.status_code == 200
+    assert set(response.json()) == {"capture_id", "source_status", "product", "analysis", "request_id", "analysis_origin", "processing_status"}
+    nutrition = response.json()["product"]["nutrition"]
+    assert nutrition["protein_g"] == 2
+    assert nutrition["basis"] == basis
+    assert nutrition["calories_kcal"] is None
+
+
+@pytest.mark.parametrize("ingredient,expected", [("whey", "not_recommended"),
+    ("water; Pode conter leite", "attention"), (None, "insufficient_information")])
+def test_capture_contract_applies_food_safety_rules(api_client, ingredient, expected):
+    from app.services.nutrition_service import NutritionService
+    user_id = uuid4()
+    profile = UserProfile(id=str(user_id), allergies=["leite"])
+    class Workflow:
+        def capture_ean(self, *_):
+            product = Product(name="Product", ingredients_text=ingredient,
+                              nutrition={"basis": "per_100ml", "protein_g": 2})
+            analysis = NutritionService(lambda _: {"status": "recommended", "summary": "Safe"}).analyze(product, profile)
+            return CaptureAnalysisOutcome(str(uuid4()), "found", product, analysis)
+    api_client.app.dependency_overrides[get_workflow_service] = lambda: Workflow()
+    api_client.app.dependency_overrides[get_current_profile] = lambda: profile
+    response = api_client.post(f"/api/v1/profiles/{user_id}/captures/ean", json={"ean": "12345678"})
+    assert response.status_code == 200
+    payload = response.json()
+    assert payload["analysis"]["status"] == expected
+    assert payload["product"]["nutrition"]["basis"] == "per_100ml"
+    if payload["analysis"]["conflicts"]:
+        assert set(payload["analysis"]["conflicts"][0]) == {
+            "term", "category", "profile_item", "evidence", "source_excerpt"}
