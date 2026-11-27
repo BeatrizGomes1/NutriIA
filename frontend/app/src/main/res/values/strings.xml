@@ -118,7 +118,7 @@
     <string name="goal_muscle_gain_desc">Considera carboidratos e proteínas disponíveis</string>
     <string name="continue_label">Continuar</string>
     <string name="step1_footer">Você escolhe quais informações deseja compartilhar.</string>
-    <string name="step2_eyebrow">2 · ALERGIAS E PREFERÊNCIAS</string>
+    <string name="step2_eyebrow">2 · SAÚDE E PREFERÊNCIAS</string>
     <string name="step2_title">O que você prefere evitar?</string>
     <string name="step2_subtitle">Essas escolhas personalizam a análise. Você pode editar tudo depois.</string>
     <string name="declared_allergies">Alergias declaradas</string>
@@ -133,6 +133,9 @@
     <string name="add">Adicionar</string>
     <string name="profile_saved">Perfil atualizado.</string>
     <string name="edit_personal_data">Dados pessoais</string>
+    <string name="health_conditions">Condições de saúde</string>
+    <string name="health_other_title">Adicionar outra condição</string>
+    <string name="health_other_hint">Ex.: gastrite</string>
 
     <!-- Restrições -->
     <string name="restrictions_eyebrow">MINHAS RESTRIÇÕES</string>

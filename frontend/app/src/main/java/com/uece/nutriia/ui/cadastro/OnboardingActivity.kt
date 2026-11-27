@@ -105,15 +105,29 @@ class OnboardingActivity : AppCompatActivity() {
         }
     }
 
-    private fun montarChips(alergias: List<String>, preferencias: List<String>) {
+    private fun montarChips(
+        alergias: List<String>,
+        preferencias: List<String>,
+        condicoes: List<String> = emptyList()
+    ) {
         preencherGrupo(binding.grupoAlergias, OPCOES_ALERGIAS, alergias)
+        preencherGrupo(
+            binding.grupoCondicoes, OPCOES_CONDICOES, condicoes,
+            R.string.health_other_title, R.string.health_other_hint
+        )
         preencherGrupo(binding.grupoPreferencias, OPCOES_PREFERENCIAS, preferencias)
     }
 
     // Opções padrão do Figma + itens personalizados já salvos no perfil.
-    private fun preencherGrupo(grupo: ChipGroup, opcoes: List<String>, marcados: List<String>) {
+    private fun preencherGrupo(
+        grupo: ChipGroup,
+        opcoes: List<String>,
+        marcados: List<String>,
+        tituloOutros: Int = R.string.other_title,
+        exemploOutros: Int = R.string.other_hint
+    ) {
         grupo.removeAllViews()
-        grupo.adicionarChipOutros(this)
+        grupo.adicionarChipOutros(this, tituloOutros, exemploOutros)
         val extras = marcados.filter { item -> opcoes.none { it.equals(item, ignoreCase = true) } }
         (opcoes + extras).forEach { opcao ->
             grupo.adicionarChip(opcao, marcado = marcados.any { it.equals(opcao, ignoreCase = true) })
@@ -216,6 +230,7 @@ class OnboardingActivity : AppCompatActivity() {
             "35 a 44 anos", "45 a 59 anos", "60 anos ou mais"
         )
         private val OPCOES_ALERGIAS = listOf("Leite", "Glúten", "Amendoim", "Soja", "Crustáceos", "Ovos")
+        private val OPCOES_CONDICOES = listOf("Diabetes", "Hipertensão", "Colesterol alto", "Doença renal", "Doença celíaca")
         private val OPCOES_PREFERENCIAS = listOf("Sem açúcar", "Sem lactose", "Baixo sódio", "Vegetariano / Vegano")
 
         fun abrirCadastro(context: Context, nome: String, email: String, senha: String) {

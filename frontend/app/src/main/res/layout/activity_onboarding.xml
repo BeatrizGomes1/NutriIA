@@ -329,6 +329,25 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="20dp"
+                android:text="@string/health_conditions"
+                android:textColor="@color/text_primary"
+                android:textSize="17sp"
+                android:textStyle="bold" />
+
+            <com.google.android.material.chip.ChipGroup
+                android:id="@+id/grupoCondicoes"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="8dp"
+                app:chipSpacingHorizontal="8dp"
+                app:chipSpacingVertical="4dp">
+
+            </com.google.android.material.chip.ChipGroup>
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="20dp"
                 android:text="@string/preferences_restrictions"
                 android:textColor="@color/text_primary"
                 android:textSize="17sp"
@@ -343,15 +362,6 @@
                 app:chipSpacingVertical="4dp" />
 
             <TextView
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="28dp"
-                android:gravity="center"
-                android:text="@string/step2_footer"
-                android:textColor="@color/text_muted"
-                android:textSize="13sp" />
-
-            <TextView
                 android:id="@+id/tvErro"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
@@ -361,12 +371,24 @@
                 android:textSize="13sp"
                 android:visibility="gone" />
 
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btnSalvar"
+                style="@style/Widget.NutriIA.Button.Primary"
+                android:layout_width="match_parent"
+                android:layout_height="56dp"
+                android:layout_marginTop="16dp"
+                android:text="@string/save_profile"
+                android:textSize="16sp"
+                android:textStyle="bold"
+                app:icon="@drawable/ic_arrow_forward"
+                app:iconGravity="textEnd" />
+
             <TextView
                 android:id="@+id/btnVoltar"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_gravity="center_horizontal"
-                android:layout_marginTop="16dp"
+                android:layout_marginTop="8dp"
                 android:background="?attr/selectableItemBackground"
                 android:padding="8dp"
                 android:text="@string/back"
@@ -374,17 +396,14 @@
                 android:textSize="14sp"
                 android:textStyle="bold" />
 
-            <com.google.android.material.button.MaterialButton
-                android:id="@+id/btnSalvar"
-                style="@style/Widget.NutriIA.Button.Primary"
+            <TextView
                 android:layout_width="match_parent"
-                android:layout_height="56dp"
-                android:layout_marginTop="8dp"
-                android:text="@string/save_profile"
-                android:textSize="16sp"
-                android:textStyle="bold"
-                app:icon="@drawable/ic_arrow_forward"
-                app:iconGravity="textEnd" />
+                android:layout_height="wrap_content"
+                android:layout_marginTop="20dp"
+                android:gravity="center"
+                android:text="@string/step2_footer"
+                android:textColor="@color/text_muted"
+                android:textSize="13sp" />
         </LinearLayout>
     </LinearLayout>
 </ScrollView>

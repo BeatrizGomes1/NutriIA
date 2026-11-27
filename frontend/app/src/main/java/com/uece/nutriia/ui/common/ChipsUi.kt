@@ -46,13 +46,17 @@ fun ChipGroup.textosMarcados(): List<String> =
         .toList()
 
 /** Chip "+ Outros" que abre um campo para o usuário digitar um item livre. */
-fun ChipGroup.adicionarChipOutros(activity: AppCompatActivity) {
+fun ChipGroup.adicionarChipOutros(
+    activity: AppCompatActivity,
+    titulo: Int = R.string.other_title,
+    exemplo: Int = R.string.other_hint
+) {
     adicionarChip(activity.getString(R.string.other), marcavel = false) {
         tag = TAG_OUTROS
         setChipIconResource(R.drawable.ic_add)
         isChipIconVisible = true
         setOnClickListener {
-            activity.pedirTexto(R.string.other_title) { termo ->
+            activity.pedirTexto(titulo, exemplo) { termo ->
                 val existente = children.filterIsInstance<Chip>()
                     .firstOrNull { it.text.toString().equals(termo, ignoreCase = true) }
                 if (existente != null) existente.isChecked = true
@@ -63,9 +67,13 @@ fun ChipGroup.adicionarChipOutros(activity: AppCompatActivity) {
 }
 
 /** Diálogo simples com um campo de texto. */
-fun AppCompatActivity.pedirTexto(titulo: Int, aoConfirmar: (String) -> Unit) {
+fun AppCompatActivity.pedirTexto(
+    titulo: Int,
+    exemplo: Int = R.string.other_hint,
+    aoConfirmar: (String) -> Unit
+) {
     val campo = EditText(this).apply {
-        setHint(R.string.other_hint)
+        setHint(exemplo)
         setBackgroundResource(R.drawable.bg_input)
         val p = (16 * resources.displayMetrics.density).toInt()
         setPadding(p, p, p, p)
